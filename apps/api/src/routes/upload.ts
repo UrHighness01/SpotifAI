@@ -7,6 +7,7 @@ import { prisma } from "../db";
 import { requireAuth, AuthedRequest } from "../middleware/auth";
 import { writeCover } from "../lib/cover-art";
 import { fingerprintAudio } from "../lib/fingerprint";
+import { recordDeclaredSignature } from "../lib/corpus";
 
 const router = Router();
 
@@ -147,6 +148,16 @@ router.post(
         // failed-capture track as 'recorded' with a null hash.
         provenanceStatus: fingerprint ? "recorded" : null,
       },
+    });
+
+    // Passive corpus self-growth (John's ranked #1): declared-generator
+    // uploads append to the signatures corpus at upload time — the label
+    // stays 'recorded'; evidence accumulates privately per the runbook.
+    recordDeclaredSignature({
+      perceptualHash: fingerprint?.perceptual,
+      byteHash: fingerprint?.hash,
+      generator: aiModel,
+      trackId: track.id,
     });
 
     if (coverFile) {

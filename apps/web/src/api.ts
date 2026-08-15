@@ -1,4 +1,7 @@
-export const API_BASE = "http://localhost:4000";
+// API base (John's operational note): env-ized like the report address so a
+// production web build can point at a real backend instead of localhost.
+// Dev default is localhost:4000.
+export const API_BASE: string = (import.meta as { env?: Record<string, string> }).env?.VITE_API_BASE ?? "http://localhost:4000";
 
 // Payout-report address (production-readiness debt): the placeholder is
 // replaced via Vite env (VITE_REPORT_ADDRESS) at build time in production.
