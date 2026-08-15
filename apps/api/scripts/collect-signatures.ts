@@ -22,6 +22,7 @@
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
+import { normalizeGenerator } from "../src/lib/corpus";
 
 const SAMPLES_JSON = process.argv[2];
 if (!SAMPLES_JSON) {
@@ -71,10 +72,14 @@ for (const s of samples) {
     continue;
   }
   const audio = fs.readFileSync(abs).subarray(0, MAX_BYTES);
+  // Normalize the generator label so curated samples land in the same
+  // bucket as declared uploads (suno-v4 and suno v4 converge) — otherwise
+  // the density gate never converges.
+  const generator = normalizeGenerator(s.generator) ?? s.generator.toLowerCase();
   const record = {
     perceptualHash: perceptualFingerprint(audio),
     byteHash: sha256Hex(audio),
-    generator: s.generator,
+    generator,
     // John's ticket on slices 53.5-55: store a RELATIVE basename + the
     // byteHash as the stable id — never the absolute path, so the corpus
     // (the future trust anchor) stays leak-free of the collector's machine

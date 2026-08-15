@@ -9,29 +9,25 @@
 // uploader's self-report — exactly the declared-provenance model the
 // runbook defines. The label stays 'recorded'; we're just accumulating
 // evidence privately.
-//
-// Known generators are the ones users actually declare (Suno/Udio/etc.).
-// A track whose declared model matches is high-confidence-enough to seed
-// the corpus passively.
-const KNOWN_GENERATORS = ["suno v3.5", "suno v4", "udio"];
 
 import { PrismaClient } from "@prisma/client";
 import fs from "fs";
 import path from "path";
+import { isKnownGenerator } from "../src/lib/corpus";
 
 const prisma = new PrismaClient();
 
 const CORPUS_FILE = path.resolve(__dirname, "../../prisma/corpus/signatures.jsonl");
 
 async function main() {
-  const tracks = await prisma.track.findMany({
-    where: {
-      fingerprintHash: { not: null },
-      perceptualHash: { not: null },
-      aiModel: { in: KNOWN_GENERATORS },
-    },
+  // Pull all fingerprinted tracks and filter with the case-insensitive
+  // isKnownGenerator (the aiModel query filter is case-sensitive, so it
+  // would miss 'Suno v4' / 'Udio').
+  const allFingerprinted = await prisma.track.findMany({
+    where: { fingerprintHash: { not: null }, perceptualHash: { not: null } },
     select: { id: true, title: true, aiModel: true, perceptualHash: true, fingerprintHash: true, fingerprintCapturedAt: true },
   });
+  const tracks = allFingerprinted.filter((t) => isKnownGenerator(t.aiModel));
 
   // Skip ones already in the corpus (content-addressed by sampleId=byteHash).
   const existing = new Set<string>();
