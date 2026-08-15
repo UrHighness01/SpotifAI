@@ -315,7 +315,7 @@ img.card-art {
 
 .track-row {
   display: grid;
-  grid-template-columns: 32px 1fr auto auto;
+  grid-template-columns: 32px 1fr auto auto auto;
   gap: 1rem;
   align-items: center;
   padding: 0.5rem 0.75rem;
@@ -326,6 +326,36 @@ img.card-art {
 .track-row .idx { color: var(--text-dim); font-size: 0.85rem; }
 .track-row .title { font-weight: 500; }
 .track-row .artist { color: var(--text-dim); font-size: 0.85rem; }
+
+/* Honest AI disclosure toggle + panel (TrackRow) */
+.ai-detail-toggle {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 0.15rem;
+  border-radius: 50%;
+}
+.ai-detail-toggle:hover { color: var(--accent); }
+.ai-detail-panel {
+  margin: 0 0 0.4rem 3rem;
+  padding: 0.6rem 0.9rem;
+  border-left: 2px solid var(--accent);
+  background: var(--bg-panel-raised);
+  border-radius: 0 4px 4px 0;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  display: grid;
+  gap: 0.3rem;
+}
+.ai-detail-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+}
 
 .add-to-playlist { position: relative; }
 .add-to-playlist-btn {
