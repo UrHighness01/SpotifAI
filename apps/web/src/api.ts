@@ -59,7 +59,7 @@ export const api = {
     return request(`/tracks${qs ? `?${qs}` : ""}`);
   },
   track: (id: string) => request(`/tracks/${id}`),
-  updateTrackMeta: (id: string, meta: { aiPrompt?: string | null; aiGenerationNotes?: string | null; rightsNotice?: string }) =>
+  updateTrackMeta: (id: string, meta: { aiPrompt?: string | null; aiGenerationNotes?: string | null; rightsNotice?: string; remixOfId?: string | null }) =>
     request(`/tracks/${id}/meta`, { method: "PATCH", body: JSON.stringify(meta) }),
   relatedTracks: (id: string) => request(`/tracks/${id}/related`),
   recommendedTracks: () => request("/tracks/recommended"),

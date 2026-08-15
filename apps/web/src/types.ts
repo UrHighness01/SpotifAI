@@ -28,6 +28,8 @@ export interface ApiTrack {
   aiPrompt: string | null;
   aiGenerationNotes: string | null;
   rightsNotice: string;
+  remixOfId: string | null;
+  remixOf?: ApiTrack | null;
   playCount: number;
   createdAt: string;
   artist?: ApiArtist;

@@ -5,7 +5,7 @@ import { requireAuth, AuthedRequest } from "../middleware/auth";
 
 const router = Router();
 
-const TRACK_INCLUDE = { artist: true, album: true } as const;
+const TRACK_INCLUDE = { artist: true, album: true, remixOf: { include: { artist: true } } } as const;
 
 /**
  * Co-occurrence scoring for recommendations (John-approved v1, slice 19):
@@ -279,9 +279,9 @@ router.get("/:id", async (req, res) => {
 const RIGHTS_OPTIONS = ["all-rights-reserved", "cc-by", "cc-by-sa", "cc-by-nc", "public-domain"];
 
 router.patch("/:id/meta", requireAuth, async (req: AuthedRequest, res) => {
-  const { aiPrompt, aiGenerationNotes, rightsNotice } = req.body || {};
-  if (aiPrompt === undefined && aiGenerationNotes === undefined && rightsNotice === undefined) {
-    return res.status(400).json({ error: "aiPrompt, aiGenerationNotes, or rightsNotice is required" });
+  const { aiPrompt, aiGenerationNotes, rightsNotice, remixOfId } = req.body || {};
+  if (aiPrompt === undefined && aiGenerationNotes === undefined && rightsNotice === undefined && remixOfId === undefined) {
+    return res.status(400).json({ error: "aiPrompt, aiGenerationNotes, rightsNotice, or remixOfId is required" });
   }
   const MAX = 32 * 1024;
   if (aiPrompt !== undefined && (typeof aiPrompt !== "string" || aiPrompt.length > MAX)) {
@@ -298,12 +298,30 @@ router.patch("/:id/meta", requireAuth, async (req: AuthedRequest, res) => {
   if (!track) return res.status(404).json({ error: "track not found" });
   if (track.artist.ownerId !== req.userId) return res.status(403).json({ error: "you do not own this artist profile" });
 
+  // remixOfId: metadata-only attribution (John's next-ideas #7) — this
+  // track was remixed/continued from another. Honor-system at first; must
+  // point at an existing track (self-remix rejected).
+  let remixTarget: string | null | undefined = undefined;
+  if (remixOfId !== undefined) {
+    if (remixOfId === track.id) {
+      return res.status(400).json({ error: "a track cannot be a remix of itself" });
+    }
+    if (remixOfId) {
+      const target = await prisma.track.findUnique({ where: { id: remixOfId }, select: { id: true } });
+      if (!target) return res.status(404).json({ error: "remix source track not found" });
+      remixTarget = remixOfId;
+    } else {
+      remixTarget = null;
+    }
+  }
+
   const updated = await prisma.track.update({
     where: { id: track.id },
     data: {
       ...(aiPrompt !== undefined ? { aiPrompt: aiPrompt || null } : {}),
       ...(aiGenerationNotes !== undefined ? { aiGenerationNotes: aiGenerationNotes || null } : {}),
       ...(rightsNotice !== undefined ? { rightsNotice: rightsNotice || "all-rights-reserved" } : {}),
+      ...(remixTarget !== undefined ? { remixOfId: remixTarget } : {}),
     },
     include: TRACK_INCLUDE,
   });

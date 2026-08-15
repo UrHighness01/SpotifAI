@@ -90,6 +90,17 @@ export function TrackRow({ track, index, queue, onMetaChange }: Props) {
                 <span className="ai-detail-label">Rights:</span>{" "}
                 <span className={`rights-badge ${track.rightsNotice}`}>{track.rightsNotice.replace(/-/g, " ")}</span>
               </div>
+              {/* Remix/continuation attribution (John's next-ideas #7):
+                  metadata-only community-graph link — builds the
+                  remix-chain discovery surface. */}
+              {track.remixOf && (
+                <div>
+                  <span className="ai-detail-label">Remix of:</span>{" "}
+                  <span style={{ color: "var(--text)" }}>
+                    {track.remixOf.title} · {track.remixOf.artist?.name}
+                  </span>
+                </div>
+              )}
               {/* Generation-notes annex (John idea #8): owner edits the
                   disclosure metadata in place. */}
               <button className="ai-edit-btn" onClick={() => setEditing(true)}>
