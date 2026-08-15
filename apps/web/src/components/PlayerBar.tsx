@@ -57,6 +57,29 @@ function VolumeIcon({ level, muted }: { level: number; muted: boolean }) {
   );
 }
 
+// Transport icons — clean SVGs instead of emoji glyphs (⏮⏭ had uneven
+// baseline alignment, making the row look off-center; user-reported).
+const SkipBackIcon = () => (
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+    <path d="M6 6h2v12H6zM20 6v12L9.5 12z" />
+  </svg>
+);
+const SkipForwardIcon = () => (
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+    <path d="M16 6h2v12h-2zM4 6v12l10.5-6z" />
+  </svg>
+);
+const PlayIcon = () => (
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+    <path d="M7 4.5v15l13-7.5z" />
+  </svg>
+);
+const PauseIcon = () => (
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+    <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
+  </svg>
+);
+
 export function PlayerBar() {
   const { queue, currentIndex, isPlaying, togglePlay, next, prev, setPlaying } = usePlayerStore();
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -199,14 +222,14 @@ export function PlayerBar() {
 
       <div className="player-center">
         <div className="transport-controls">
-          <button onClick={prev} disabled={currentIndex <= 0} aria-label="Previous">
-            ⏮
+          <button onClick={prev} disabled={currentIndex <= 0} aria-label="Previous" title="Previous">
+            <SkipBackIcon />
           </button>
           <button className="play-btn" onClick={togglePlay} aria-label={isPlaying ? "Pause" : "Play"}>
-            {isPlaying ? "⏸" : "▶"}
+            {isPlaying ? <PauseIcon /> : <PlayIcon />}
           </button>
-          <button onClick={next} disabled={currentIndex >= queue.length - 1} aria-label="Next">
-            ⏭
+          <button onClick={next} disabled={currentIndex >= queue.length - 1} aria-label="Next" title="Next">
+            <SkipForwardIcon />
           </button>
         </div>
         <div className="seek-row">

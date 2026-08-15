@@ -792,6 +792,7 @@ img.card-art {
 .transport-controls {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 1.25rem;
 }
 
@@ -799,16 +800,25 @@ img.card-art {
   background: none;
   border: none;
   color: var(--text-dim);
-  font-size: 1.1rem;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 50%;
+  transition: color 0.15s ease, background 0.15s ease;
 }
-.transport-controls button:hover { color: var(--text); }
+.transport-controls button:hover:not(:disabled) { color: var(--text); background: var(--bg-card); }
+.transport-controls button:disabled { opacity: 0.35; cursor: default; }
 
 .play-btn {
-  width: 32px; height: 32px;
+  width: 36px; height: 36px;
   border-radius: 50%;
   background: var(--text) !important;
   color: #000 !important;
   display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
 }
 
 .seek-row {
