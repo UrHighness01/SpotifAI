@@ -104,14 +104,21 @@ export function TrackRow({ track, index, queue, onMetaChange }: Props) {
                   <span className="ai-detail-label">License terms:</span> {clampText(track.licenseTerms, 200)}
                 </div>
               )}
-              {/* Remix/continuation attribution (John's next-ideas #7):
-                  metadata-only community-graph link — builds the
-                  remix-chain discovery surface. */}
+              {/* Remix/continuation attribution (John's next-ideas #7 +
+                  Tier E #3): metadata-only community-graph link — with
+                  certified lineage: the remix source's provenance (when
+                  recorded) inherits, so a fan can trace 'this came from
+                  that, which came from that' pinned to fingerprints. */}
               {track.remixOf && (
                 <div>
                   <span className="ai-detail-label">Remix of:</span>{" "}
                   <span style={{ color: "var(--text)" }}>
                     {track.remixOf.title} · {track.remixOf.artist?.name}
+                    {track.remixOf.fingerprintHash && (
+                      <span className={`rights-badge provenance`} style={{ marginLeft: "0.4rem" }}>
+                        ✓ provenance recorded
+                      </span>
+                    )}
                   </span>
                 </div>
               )}
