@@ -153,16 +153,22 @@ export function Artist() {
         </div>
       )}
 
-      {/* Provenance wall (John's Tier B #4): a public, immutable log of
-          every fingerprint captured by this uploader. Because artist =
-          uploader, this turns the per-track badge into a reputation surface
-          — a creator honest across 100 tracks is visibly more trustworthy
-          than one who isn't. */}
+      {/* Provenance wall (John's Tier B #4 + Tier E #4): a public,
+          immutable log of every fingerprint captured by this uploader —
+          turns the per-track badge into a reputation surface. The honesty
+          ratio is shown plainly ('X of Y tracks have fingerprints; Z remixes
+          point to verifiable sources') — an ungameable coverage disclosure,
+          not a gamified score. */}
       {artist.tracks.some((t) => t.fingerprintHash) && (
         <div style={{ marginTop: "2.5rem" }}>
           <h2>Provenance wall</h2>
           <p style={{ color: "var(--text-dim)", fontSize: "0.85rem", marginBottom: "0.6rem" }}>
-            {artist.tracks.filter((t) => t.fingerprintHash).length} track(s) with fingerprints recorded at upload — this uploader's honesty is on the record.{" "}
+            {artist.tracks.filter((t) => t.fingerprintHash).length} of {artist.tracks.length} tracks have fingerprints recorded at upload
+            {(() => {
+              const remixWithSource = artist.tracks.filter((t) => t.remixOf?.fingerprintHash).length;
+              return remixWithSource > 0 ? ` · ${remixWithSource} remix(es) point to verifiable sources` : "";
+            })()}
+            .{" "}
             <a href={`/api/artists/${artist.id}/provenance-manifest`} target="_blank" rel="noopener noreferrer" className="support-link" style={{ fontSize: "0.8rem" }}>
               Signed manifest →
             </a>

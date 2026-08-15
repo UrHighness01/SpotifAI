@@ -28,7 +28,7 @@ router.get("/:id", async (req, res) => {
     where: { id: req.params.id },
     include: {
       albums: true,
-      tracks: { include: { album: true } },
+      tracks: { include: { album: true, remixOf: { select: { id: true, title: true, artist: { select: { id: true, name: true } }, fingerprintHash: true } } } },
       // The differentiating brand: an artist IS the uploader's own profile —
       // there is no label or distributor layer. Surfacing the uploader
       // identity makes that explicit (John's ideas pass #6).
