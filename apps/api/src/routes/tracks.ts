@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../db";
 import { verifySessionToken } from "../lib/jwt";
+import { requireAuth, AuthedRequest } from "../middleware/auth";
 
 const router = Router();
 
@@ -259,6 +260,38 @@ router.get("/:id", async (req, res) => {
   });
   if (!track) return res.status(404).json({ error: "track not found" });
   res.json({ track });
+});
+
+// Generation-notes annex (John's ideas pass #8): owner-scoped editing of the
+// AI-disclosure metadata (aiPrompt / aiGenerationNotes) after upload. Only
+// the artist's owner can change it; bounded lengths (32KB fieldSize cap
+// mirrors the upload route).
+router.patch("/:id/meta", requireAuth, async (req: AuthedRequest, res) => {
+  const { aiPrompt, aiGenerationNotes } = req.body || {};
+  if (aiPrompt === undefined && aiGenerationNotes === undefined) {
+    return res.status(400).json({ error: "aiPrompt or aiGenerationNotes is required" });
+  }
+  const MAX = 32 * 1024;
+  if (aiPrompt !== undefined && (typeof aiPrompt !== "string" || aiPrompt.length > MAX)) {
+    return res.status(400).json({ error: `aiPrompt must be a string <= ${MAX} chars` });
+  }
+  if (aiGenerationNotes !== undefined && (typeof aiGenerationNotes !== "string" || aiGenerationNotes.length > MAX)) {
+    return res.status(400).json({ error: `aiGenerationNotes must be a string <= ${MAX} chars` });
+  }
+
+  const track = await prisma.track.findUnique({ where: { id: req.params.id }, include: { artist: true } });
+  if (!track) return res.status(404).json({ error: "track not found" });
+  if (track.artist.ownerId !== req.userId) return res.status(403).json({ error: "you do not own this artist profile" });
+
+  const updated = await prisma.track.update({
+    where: { id: track.id },
+    data: {
+      ...(aiPrompt !== undefined ? { aiPrompt: aiPrompt || null } : {}),
+      ...(aiGenerationNotes !== undefined ? { aiGenerationNotes: aiGenerationNotes || null } : {}),
+    },
+    include: TRACK_INCLUDE,
+  });
+  res.json({ track: updated });
 });
 
 export default router;
