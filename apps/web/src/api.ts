@@ -79,8 +79,18 @@ export const api = {
     request(`/albums/${id}/cover`, { method: "PATCH", body: formData }),
 
   tracks: (params: { q?: string; artistId?: string; albumId?: string; aiModel?: string; sort?: string; fingerprinted?: boolean; signatureMatched?: boolean } = {}) => {
-    const qs = new URLSearchParams(params as Record<string, string>).toString();
-    return request(`/tracks${qs ? `?${qs}` : ""}`);
+    // CRITICAL: URLSearchParams stringifies `undefined` to the literal
+    // "undefined". Passing { q: undefined } produced `?q=undefined`, and
+    // the API then filtered for tracks containing "undefined" → every
+    // un-filtered track list silently came back EMPTY while artists (which
+    // skip falsy params) rendered fine. Only include defined values.
+    const qs = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) {
+      if (v === undefined || v === null || v === false) continue;
+      qs.set(k, String(v));
+    }
+    const s = qs.toString();
+    return request(`/tracks${s ? `?${s}` : ""}`);
   },
   track: (id: string) => request(`/tracks/${id}`),
   updateTrackMeta: (id: string, meta: { aiPrompt?: string | null; aiGenerationNotes?: string | null; rightsNotice?: string; remixOfId?: string | null; licensePriceUsd?: number | null; licenseTerms?: string | null }) =>
