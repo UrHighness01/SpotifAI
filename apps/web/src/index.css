@@ -357,6 +357,20 @@ img.card-art {
   color: var(--accent);
 }
 
+/* Owner-scoped cover upload (Album page) */
+.cover-upload {
+  display: inline-block;
+  margin-top: 0.75rem;
+  padding: 0.3rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.cover-upload:hover { border-color: var(--accent); color: var(--accent); }
+
 .add-to-playlist { position: relative; }
 .add-to-playlist-btn {
   background: none;

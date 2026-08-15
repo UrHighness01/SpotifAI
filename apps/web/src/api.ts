@@ -51,6 +51,8 @@ export const api = {
 
   albums: (artistId?: string) => request(`/albums${artistId ? `?artistId=${artistId}` : ""}`),
   album: (id: string) => request(`/albums/${id}`),
+  updateAlbumCover: (id: string, formData: FormData) =>
+    request(`/albums/${id}/cover`, { method: "PATCH", body: formData }),
 
   tracks: (params: { q?: string; artistId?: string; albumId?: string; aiModel?: string; sort?: string } = {}) => {
     const qs = new URLSearchParams(params as Record<string, string>).toString();

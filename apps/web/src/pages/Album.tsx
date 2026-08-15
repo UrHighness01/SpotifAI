@@ -19,6 +19,12 @@ export function Album() {
   const [related, setRelated] = useState<ApiTrack[]>([]);
   const [blurb, setBlurb] = useState<string | null>(null);
   const [nanoAvailable, setNanoAvailable] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [coverError, setCoverError] = useState<string | null>(null);
+
+  const reload = () => {
+    if (id) api.album(id).then((d) => setAlbum(d.album));
+  };
 
   useEffect(() => {
     if (id) {
@@ -52,10 +58,38 @@ export function Album() {
 
   if (!album) return <div>Loading…</div>;
 
+  const onCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !id) return;
+    setUploading(true);
+    setCoverError(null);
+    try {
+      const fd = new FormData();
+      fd.append("cover", file);
+      await api.updateAlbumCover(id, fd);
+      reload();
+    } catch (err) {
+      setCoverError(err instanceof Error ? err.message : "upload failed");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
   return (
     <div>
       <h1 className="section-title">{album.title}</h1>
       <p style={{ color: "var(--text-dim)" }}>{album.artist?.name}</p>
+      {nanoAvailable && (
+        <p className="track-blurb" style={{ color: "var(--text-dim)", maxWidth: "62ch", fontStyle: "italic" }}>
+          {blurb ? blurb : "Generating an on-device description…"}
+        </p>
+      )}
+      <label className="cover-upload">
+        {uploading ? "Uploading…" : "Change cover"}
+        <input type="file" accept="image/png,image/jpeg,image/webp" onChange={onCoverChange} hidden />
+      </label>
+      {coverError && <p style={{ color: "var(--flag, #a13a2e)", fontSize: "0.85rem" }}>{coverError}</p>}
       {nanoAvailable && (
         <p className="track-blurb" style={{ color: "var(--text-dim)", maxWidth: "62ch", fontStyle: "italic" }}>
           {blurb ? blurb : "Generating an on-device description…"}
