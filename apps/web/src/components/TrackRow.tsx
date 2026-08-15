@@ -1,4 +1,5 @@
 import { usePlayerStore } from "../store/player";
+import { AddToPlaylist } from "./AddToPlaylist";
 import type { ApiTrack } from "../types";
 
 interface Props {
@@ -17,6 +18,7 @@ export function TrackRow({ track, index, queue }: Props) {
         <div className="artist">{track.artist?.name || "Unknown artist"}</div>
       </div>
       <span className="artist">{track.aiModel}</span>
+      <AddToPlaylist trackId={track.id} />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 import fs from "fs";
 import path from "path";
 
@@ -33,11 +34,23 @@ function makeSilentWav(): Buffer {
 async function main() {
   fs.mkdirSync(AUDIO_DIR, { recursive: true });
 
+  const seedPasswordHash = await bcrypt.hash("seed-owner-password-change-me", 10);
+  const seedOwner = await prisma.user.upsert({
+    where: { email: "seed-owner@spotifai.local" },
+    create: {
+      email: "seed-owner@spotifai.local",
+      passwordHash: seedPasswordHash,
+      displayName: "Seed Owner",
+      emailVerified: true,
+    },
+    update: {},
+  });
+
   const artist1 = await prisma.artist.create({
-    data: { name: "Null Horizon", bio: "A fully AI-generated ambient project.", aiModel: "Suno v4" },
+    data: { name: "Null Horizon", bio: "A fully AI-generated ambient project.", aiModel: "Suno v4", ownerId: seedOwner.id },
   });
   const artist2 = await prisma.artist.create({
-    data: { name: "Static Bloom", bio: "AI-generated synthpop.", aiModel: "Udio" },
+    data: { name: "Static Bloom", bio: "AI-generated synthpop.", aiModel: "Udio", ownerId: seedOwner.id },
   });
 
   const album1 = await prisma.album.create({

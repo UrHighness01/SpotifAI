@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../db";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth, AuthedRequest } from "../middleware/auth";
 
 const router = Router();
 
@@ -23,9 +23,12 @@ router.get("/:id", async (req, res) => {
   res.json({ album });
 });
 
-router.post("/", requireAuth, async (req, res) => {
+router.post("/", requireAuth, async (req: AuthedRequest, res) => {
   const { title, artistId, coverPath, releaseDate } = req.body || {};
   if (!title || !artistId) return res.status(400).json({ error: "title and artistId are required" });
+  const artist = await prisma.artist.findUnique({ where: { id: artistId } });
+  if (!artist) return res.status(404).json({ error: "artist not found" });
+  if (artist.ownerId !== req.userId) return res.status(403).json({ error: "you do not own this artist profile" });
   const album = await prisma.album.create({
     data: { title, artistId, coverPath, releaseDate: releaseDate ? new Date(releaseDate) : undefined },
   });

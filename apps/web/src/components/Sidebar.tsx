@@ -14,6 +14,9 @@ export function Sidebar() {
         <NavLink to="/library" className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}>
           Liked Songs
         </NavLink>
+        <NavLink to="/playlists" className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}>
+          Playlists
+        </NavLink>
         <NavLink to="/upload" className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}>
           Upload a track
         </NavLink>

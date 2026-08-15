@@ -29,8 +29,17 @@ router.get("/:trackId", async (req, res) => {
   }
 
   const match = /bytes=(\d*)-(\d*)/.exec(range);
-  const start = match && match[1] ? parseInt(match[1], 10) : 0;
-  const end = match && match[2] ? parseInt(match[2], 10) : fileSize - 1;
+  if (!match || (!match[1] && !match[2])) {
+    res.writeHead(416, { "Content-Range": `bytes */${fileSize}` });
+    return res.end();
+  }
+  const start = match[1] ? parseInt(match[1], 10) : fileSize - parseInt(match[2], 10);
+  const end = match[2] && match[1] ? parseInt(match[2], 10) : fileSize - 1;
+
+  if (Number.isNaN(start) || Number.isNaN(end) || start > end || start < 0 || end >= fileSize) {
+    res.writeHead(416, { "Content-Range": `bytes */${fileSize}` });
+    return res.end();
+  }
   const chunkSize = end - start + 1;
 
   res.writeHead(206, {

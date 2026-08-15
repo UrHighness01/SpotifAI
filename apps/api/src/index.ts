@@ -1,8 +1,12 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+
+import "./lib/secrets";
+import "./lib/email";
 
 import authRoutes from "./routes/auth";
 import artistRoutes from "./routes/artists";
@@ -11,10 +15,7 @@ import trackRoutes from "./routes/tracks";
 import uploadRoutes from "./routes/upload";
 import streamRoutes from "./routes/stream";
 import libraryRoutes from "./routes/library";
-
-if (process.env.NODE_ENV === "production" && (!process.env.JWT_SECRET || process.env.JWT_SECRET === "dev-secret-change-me")) {
-  throw new Error("JWT_SECRET must be set to a non-default value in production");
-}
+import playlistRoutes from "./routes/playlists";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -32,15 +33,44 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Looser than auth (mutating writes, not credential guesses) but still bounded
+// so a single account can't be scripted into hammering the API or the disk.
+const writeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const uploadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Tighter than authLimiter: these two send mail, so an unbounded caller can
+// mail-bomb a single inbox even though they can't brute-force anything (tokens
+// are 256-bit random).
+const mailLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
+app.use("/auth/forgot-password", mailLimiter);
+app.use("/auth/resend-verification", mailLimiter);
 app.use("/auth", authLimiter, authRoutes);
-app.use("/artists", artistRoutes);
-app.use("/albums", albumRoutes);
+app.use("/artists", writeLimiter, artistRoutes);
+app.use("/albums", writeLimiter, albumRoutes);
 app.use("/tracks", trackRoutes);
-app.use("/upload", uploadRoutes);
+app.use("/upload", uploadLimiter, uploadRoutes);
 app.use("/stream", streamRoutes);
-app.use("/library", libraryRoutes);
+app.use("/library", writeLimiter, libraryRoutes);
+app.use("/playlists", writeLimiter, playlistRoutes);
 
 app.listen(PORT, () => {
   console.log(`SpotifAI API listening on http://localhost:${PORT}`);

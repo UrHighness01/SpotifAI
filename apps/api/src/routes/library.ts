@@ -14,6 +14,8 @@ router.get("/", requireAuth, async (req: AuthedRequest, res) => {
 });
 
 router.post("/:trackId", requireAuth, async (req: AuthedRequest, res) => {
+  const track = await prisma.track.findUnique({ where: { id: req.params.trackId } });
+  if (!track) return res.status(404).json({ error: "track not found" });
   const save = await prisma.librarySave.upsert({
     where: { userId_trackId: { userId: req.userId!, trackId: req.params.trackId } },
     create: { userId: req.userId!, trackId: req.params.trackId },

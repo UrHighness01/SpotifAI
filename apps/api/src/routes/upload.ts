@@ -4,7 +4,7 @@ import path from "path";
 import fs from "fs";
 import { randomUUID } from "crypto";
 import { prisma } from "../db";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth, AuthedRequest } from "../middleware/auth";
 
 const router = Router();
 
@@ -14,27 +14,36 @@ const COVER_DIR = path.join(STORAGE_ROOT, "covers");
 fs.mkdirSync(AUDIO_DIR, { recursive: true });
 fs.mkdirSync(COVER_DIR, { recursive: true });
 
+// Extension is derived from the validated mimetype below, never from the
+// client-supplied filename, so an attacker can't smuggle an arbitrary
+// extension onto a stored file.
+const AUDIO_EXT_BY_MIME: Record<string, string> = {
+  "audio/mpeg": ".mp3",
+  "audio/mp3": ".mp3",
+  "audio/wav": ".wav",
+  "audio/x-wav": ".wav",
+  "audio/flac": ".flac",
+  "audio/ogg": ".ogg",
+  "audio/aac": ".aac",
+  "audio/mp4": ".m4a",
+  "audio/x-m4a": ".m4a",
+};
+const COVER_EXT_BY_MIME: Record<string, string> = {
+  "image/png": ".png",
+  "image/jpeg": ".jpg",
+  "image/webp": ".webp",
+};
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, file.fieldname === "cover" ? COVER_DIR : AUDIO_DIR);
   },
   filename: (req, file, cb) => {
-    cb(null, `${randomUUID()}${path.extname(file.originalname)}`);
+    const extByMime = file.fieldname === "cover" ? COVER_EXT_BY_MIME : AUDIO_EXT_BY_MIME;
+    const ext = extByMime[file.mimetype] || "";
+    cb(null, `${randomUUID()}${ext}`);
   },
 });
-
-const AUDIO_MIME_TYPES = new Set([
-  "audio/mpeg",
-  "audio/mp3",
-  "audio/wav",
-  "audio/x-wav",
-  "audio/flac",
-  "audio/ogg",
-  "audio/aac",
-  "audio/mp4",
-  "audio/x-m4a",
-]);
-const COVER_MIME_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 
 const upload = multer({
   storage,
@@ -42,13 +51,18 @@ const upload = multer({
     fileSize: 200 * 1024 * 1024,
   },
   fileFilter: (req, file, cb) => {
-    const allowed = file.fieldname === "cover" ? COVER_MIME_TYPES : AUDIO_MIME_TYPES;
-    if (!allowed.has(file.mimetype)) {
+    const allowed = file.fieldname === "cover" ? COVER_EXT_BY_MIME : AUDIO_EXT_BY_MIME;
+    if (!(file.mimetype in allowed)) {
       return cb(new Error(`unsupported ${file.fieldname} file type: ${file.mimetype}`));
     }
     cb(null, true);
   },
 });
+
+function unlinkQuiet(filePath?: string) {
+  if (!filePath) return;
+  fs.unlink(filePath, () => {});
+}
 
 router.post(
   "/track",
@@ -59,17 +73,38 @@ router.post(
       next();
     });
   },
-  async (req, res) => {
+  async (req: AuthedRequest, res) => {
     const files = req.files as { audio?: Express.Multer.File[]; cover?: Express.Multer.File[] };
     const audioFile = files?.audio?.[0];
-    if (!audioFile) return res.status(400).json({ error: "audio file is required" });
+    const coverFile = files?.cover?.[0];
+
+    const cleanupAndReject = (status: number, error: string) => {
+      unlinkQuiet(audioFile?.path);
+      unlinkQuiet(coverFile?.path);
+      return res.status(status).json({ error });
+    };
+
+    if (!audioFile) return cleanupAndReject(400, "audio file is required");
 
     const { title, artistId, albumId, durationSec, aiModel, aiPrompt, aiGenerationNotes } = req.body || {};
     if (!title || !artistId || !aiModel) {
-      return res.status(400).json({ error: "title, artistId, and aiModel are required" });
+      return cleanupAndReject(400, "title, artistId, and aiModel are required");
     }
 
-    const coverFile = files?.cover?.[0];
+    const artist = await prisma.artist.findUnique({ where: { id: artistId } });
+    if (!artist) return cleanupAndReject(404, "artist not found");
+    if (artist.ownerId !== req.userId) {
+      return cleanupAndReject(403, "you do not own this artist profile");
+    }
+
+    let album = null;
+    if (albumId) {
+      album = await prisma.album.findUnique({ where: { id: albumId } });
+      if (!album) return cleanupAndReject(404, "album not found");
+      if (album.artistId !== artistId) {
+        return cleanupAndReject(403, "album does not belong to this artist");
+      }
+    }
 
     const track = await prisma.track.create({
       data: {
@@ -85,11 +120,15 @@ router.post(
     });
 
     if (coverFile) {
-      if (albumId) {
+      if (album) {
         await prisma.album.update({
-          where: { id: albumId },
+          where: { id: album.id },
           data: { coverPath: path.relative(STORAGE_ROOT, coverFile.path) },
         });
+      } else {
+        // No album to attach the cover to (or the album check above already
+        // rejected the request) — don't leave the file orphaned on disk.
+        unlinkQuiet(coverFile.path);
       }
     }
 

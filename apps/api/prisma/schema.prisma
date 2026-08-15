@@ -8,22 +8,31 @@ datasource db {
 }
 
 model User {
-  id           String         @id @default(cuid())
-  email        String         @unique
-  passwordHash String
-  displayName  String
-  createdAt    DateTime       @default(now())
-  playlists    Playlist[]
-  librarySaves LibrarySave[]
+  id                        String         @id @default(cuid())
+  email                     String         @unique
+  passwordHash              String
+  displayName               String
+  createdAt                 DateTime       @default(now())
+  tokenVersion              Int            @default(0)
+  emailVerified             Boolean        @default(false)
+  emailVerificationTokenHash String?       @unique
+  emailVerificationExpires  DateTime?
+  passwordResetTokenHash    String?        @unique
+  passwordResetExpires      DateTime?
+  playlists                 Playlist[]
+  librarySaves              LibrarySave[]
+  artists                   Artist[]
 }
 
 model Artist {
   id         String   @id @default(cuid())
+  ownerId    String
   name       String
   bio        String?
   avatarPath String?
   aiModel    String   @default("unknown")
   createdAt  DateTime @default(now())
+  owner      User     @relation(fields: [ownerId], references: [id])
   albums     Album[]
   tracks     Track[]
 }

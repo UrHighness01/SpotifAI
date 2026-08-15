@@ -31,9 +31,28 @@ export interface ApiTrack {
   album?: ApiAlbum | null;
 }
 
+export interface ApiPlaylist {
+  id: string;
+  name: string;
+  userId: string;
+  createdAt: string;
+}
+
+export interface ApiPlaylistTrack {
+  playlistId: string;
+  trackId: string;
+  position: number;
+  track: ApiTrack;
+}
+
+export interface ApiPlaylistDetail extends ApiPlaylist {
+  tracks: ApiPlaylistTrack[];
+}
+
 export interface ApiUser {
   id: string;
   email: string;
   displayName: string;
   createdAt: string;
+  emailVerified: boolean;
 }

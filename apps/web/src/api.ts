@@ -11,7 +11,9 @@ async function request(path: string, options: RequestInit = {}) {
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || `request failed: ${res.status}`);
+    const err = new Error(body.error || `request failed: ${res.status}`) as Error & { code?: string };
+    if (body.code) err.code = body.code;
+    throw err;
   }
   if (res.status === 204) return null;
   return res.json();
@@ -24,6 +26,13 @@ export const api = {
     request("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),
   logout: () => request("/auth/logout", { method: "POST" }),
   me: () => request("/auth/me"),
+  verifyEmail: (token: string) => request("/auth/verify-email", { method: "POST", body: JSON.stringify({ token }) }),
+  resendVerification: (email: string) =>
+    request("/auth/resend-verification", { method: "POST", body: JSON.stringify({ email }) }),
+  forgotPassword: (email: string) =>
+    request("/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
+  resetPassword: (token: string, password: string) =>
+    request("/auth/reset-password", { method: "POST", body: JSON.stringify({ token, password }) }),
 
   artists: (q?: string) => request(`/artists${q ? `?q=${encodeURIComponent(q)}` : ""}`),
   artist: (id: string) => request(`/artists/${id}`),
@@ -44,6 +53,15 @@ export const api = {
   unsaveTrack: (trackId: string) => request(`/library/${trackId}`, { method: "DELETE" }),
 
   upload: (formData: FormData) => request("/upload/track", { method: "POST", body: formData }),
+
+  playlists: () => request("/playlists"),
+  playlist: (id: string) => request(`/playlists/${id}`),
+  createPlaylist: (name: string) => request("/playlists", { method: "POST", body: JSON.stringify({ name }) }),
+  deletePlaylist: (id: string) => request(`/playlists/${id}`, { method: "DELETE" }),
+  addToPlaylist: (playlistId: string, trackId: string) =>
+    request(`/playlists/${playlistId}/tracks`, { method: "POST", body: JSON.stringify({ trackId }) }),
+  removeFromPlaylist: (playlistId: string, trackId: string) =>
+    request(`/playlists/${playlistId}/tracks/${trackId}`, { method: "DELETE" }),
 
   streamUrl: (trackId: string) => `${API_BASE}/stream/${trackId}`,
 };
