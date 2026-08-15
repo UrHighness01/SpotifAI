@@ -25,6 +25,7 @@ export function Home() {
   const [trending, setTrending] = useState<ApiTrack[]>([]);
   const [recommended, setRecommended] = useState<ApiTrack[]>([]);
   const [followFeed, setFollowFeed] = useState<ApiTrack[]>([]);
+  const [verifiable, setVerifiable] = useState<ApiTrack[]>([]);
   const playTrack = usePlayerStore((s) => s.playTrack);
 
   useEffect(() => {
@@ -37,6 +38,10 @@ export function Home() {
     // New-drop feed from followed uploaders (John's Tier 2 #5) — 401 for
     // anonymous, handled silently.
     api.followFeed().then((d) => setFollowFeed(d.tracks)).catch(() => {});
+    // Provenance-gated discovery (John's post-consolidation #6): tracks with
+    // a RECORDED fingerprint — un-gameable (a track either has one or not),
+    // honestly scoped as 'recorded', not independently corroborated.
+    api.tracks({ fingerprinted: true }).then((d) => setVerifiable(d.tracks));
   }, []);
 
   return (
@@ -137,6 +142,36 @@ export function Home() {
                     </div>
                   </div>
                 )}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Provenance-gated discovery (John's post-consolidation #6): tracks
+          with a recorded fingerprint — 'verifiably honest' in scope: the
+          origin is recorded (un-gameable signal), not yet independently
+          corroborated (that waits for anti-sybil attestation). */}
+      {verifiable.length > 0 && (
+        <>
+          <div className="section-head">
+            <h2 className="section-title">Verifiably honest</h2>
+          </div>
+          <div className="card-grid">
+            {verifiable.map((track) => (
+              <div key={track.id} className="card" onClick={() => playTrack(track, verifiable)}>
+                <div className="card-art-wrap">
+                  {track.album?.coverPath ? (
+                    <img className="card-art" src={mediaUrl(track.album.coverPath)!} alt={track.title} />
+                  ) : (
+                    <div className="card-art" />
+                  )}
+                  <button className="card-play-btn" aria-label={`Play ${track.title}`}>
+                    <PlayIcon />
+                  </button>
+                </div>
+                <div className="card-title">{track.title}</div>
+                <div className="card-sub">{track.artist?.name}</div>
               </div>
             ))}
           </div>

@@ -56,7 +56,7 @@ export const api = {
   updateAlbumCover: (id: string, formData: FormData) =>
     request(`/albums/${id}/cover`, { method: "PATCH", body: formData }),
 
-  tracks: (params: { q?: string; artistId?: string; albumId?: string; aiModel?: string; sort?: string } = {}) => {
+  tracks: (params: { q?: string; artistId?: string; albumId?: string; aiModel?: string; sort?: string; fingerprinted?: boolean } = {}) => {
     const qs = new URLSearchParams(params as Record<string, string>).toString();
     return request(`/tracks${qs ? `?${qs}` : ""}`);
   },

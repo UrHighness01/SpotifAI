@@ -93,11 +93,14 @@ router.get("/", async (req, res) => {
   const albumId = typeof req.query.albumId === "string" ? req.query.albumId : undefined;
   const aiModel = typeof req.query.aiModel === "string" ? req.query.aiModel : undefined;
   const sort = typeof req.query.sort === "string" ? req.query.sort : undefined;
+  // Provenance-gated discovery (John's post-consolidation #6, honest v1):
+  // filter to tracks with a RECORDED fingerprint — an un-gameable signal (a
+  // track either has one or not). Deliberately NOT gated on attestation
+  // counts (sybil-inflatable until anti-sybil exists). 'verifiably honest'
+  // in scope: the origin is recorded, not independently corroborated yet.
+  const fingerprinted = req.query.fingerprinted === "true";
   const tracks = await prisma.track.findMany({
     where: {
-      // Spotify-esque search: match title OR the artist's name (the artist
-      // IS the uploader's profile, so searching an uploader finds their
-      // tracks too).
       ...(q
         ? {
             OR: [
@@ -109,6 +112,7 @@ router.get("/", async (req, res) => {
       ...(artistId ? { artistId } : {}),
       ...(albumId ? { albumId } : {}),
       ...(aiModel ? { aiModel } : {}),
+      ...(fingerprinted ? { fingerprintHash: { not: null } } : {}),
     },
     include: TRACK_INCLUDE,
     orderBy: sort === "trending" ? { playCount: "desc" } : { createdAt: "desc" },
