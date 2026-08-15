@@ -4,6 +4,8 @@ export interface ApiArtist {
   bio: string | null;
   avatarPath: string | null;
   aiModel: string;
+  payoutKind: string | null;
+  payoutHandle: string | null;
   createdAt: string;
   owner?: { id: string; displayName: string };
 }

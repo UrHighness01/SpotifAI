@@ -56,6 +56,25 @@ export function Artist() {
           {following ? "Following ✓" : "Follow"}
         </button>
       )}
+
+      {/* Support / payout (Tier A #1-2): the uploader's external payout
+          handle — the literal absence of a label. One click routes money
+          directly at the artist, zero platform custody or fee. */}
+      {artist.payoutHandle && artist.payoutKind && (
+        <p style={{ marginTop: "0.5rem" }}>
+          <a
+            href={artist.payoutHandle}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="support-link"
+          >
+            Support {artist.name} via {artist.payoutKind} →
+          </a>
+          <span style={{ color: "var(--text-dim)", fontSize: "0.78rem" }}> (direct to artist, no middleman)</span>
+        </p>
+      )}
+      {/* Owner sets the payout handle (Tier A #1). */}
+      {user && artist.owner?.id === user.id && <PayoutEditor artistId={artist.id} payoutKind={artist.payoutKind} payoutHandle={artist.payoutHandle} onSaved={() => api.artist(artist.id).then((d) => setArtist(d.artist))} />}
       {/* Differentiating brand (John's ideas pass #6): the artist IS the
           uploader's own profile — no label or distributor layer in between.
           Made explicit so the platform's model is self-evident. */}
@@ -122,6 +141,77 @@ export function Artist() {
             ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// Owner-only payout handle editor (Tier A #1): metadata-only, no custody.
+function PayoutEditor({
+  artistId,
+  payoutKind,
+  payoutHandle,
+  onSaved,
+}: {
+  artistId: string;
+  payoutKind: string | null;
+  payoutHandle: string | null;
+  onSaved: () => void;
+}) {
+  const [kind, setKind] = useState(payoutKind ?? "");
+  const [handle, setHandle] = useState(payoutHandle ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const save = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      await api.updateArtistPayout(artistId, {
+        payoutKind: kind.trim() || null,
+        payoutHandle: handle.trim() || null,
+      });
+      onSaved();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "save failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="ai-detail-panel" style={{ marginLeft: 0, marginTop: "0.6rem" }}>
+      <div className="ai-edit-form">
+        <label className="ai-detail-label">Payout kind</label>
+        <select value={kind} onChange={(e) => setKind(e.target.value)} className="ai-rights-select">
+          <option value="">None</option>
+          <option value="ko-fi">Ko-fi</option>
+          <option value="stripe">Stripe</option>
+          <option value="paypal">PayPal</option>
+          <option value="btc">Bitcoin</option>
+          <option value="other">Other</option>
+        </select>
+        <label className="ai-detail-label">Payout link / handle</label>
+        <input
+          value={handle}
+          onChange={(e) => setHandle(e.target.value)}
+          placeholder="https://ko-fi.com/you"
+          maxLength={500}
+          style={{
+            background: "var(--bg-card)",
+            border: "1px solid var(--border)",
+            borderRadius: 4,
+            color: "var(--text)",
+            padding: "0.4rem 0.6rem",
+            fontSize: "0.85rem",
+          }}
+        />
+        {error && <div style={{ color: "var(--flag, #a13a2e)", fontSize: "0.8rem" }}>{error}</div>}
+        <div className="ai-edit-actions">
+          <button className="ai-edit-btn" onClick={save} disabled={saving}>
+            {saving ? "Saving…" : "Save payout"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -46,6 +46,8 @@ export const api = {
     return request(`/artists${s ? `?${s}` : ""}`);
   },
   artist: (id: string) => request(`/artists/${id}`),
+  updateArtistPayout: (id: string, payout: { payoutKind?: string | null; payoutHandle?: string | null }) =>
+    request(`/artists/${id}/payout`, { method: "PATCH", body: JSON.stringify(payout) }),
   createArtist: (name: string, bio: string, aiModel: string) =>
     request("/artists", { method: "POST", body: JSON.stringify({ name, bio, aiModel }) }),
 

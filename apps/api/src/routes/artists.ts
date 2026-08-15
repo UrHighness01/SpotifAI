@@ -53,4 +53,32 @@ router.post("/", requireAuth, async (req: AuthedRequest, res) => {
   res.status(201).json({ artist: updated });
 });
 
+// Payout handle (Tier A #1 — monetize the no-middleman pitch): the uploader
+// sets an external payout handle (Kofi/Stripe/PayPal/BTC) on their profile.
+// Metadata-only, no platform custody, no fee — the artist routes income
+// directly at themselves, the literal opposite of a label's cut. Owner-only.
+const PAYOUT_KINDS = ["ko-fi", "stripe", "paypal", "btc", "other"];
+
+router.patch("/:id/payout", requireAuth, async (req: AuthedRequest, res) => {
+  const { payoutKind, payoutHandle } = req.body || {};
+  if (payoutKind !== undefined && !PAYOUT_KINDS.includes(payoutKind)) {
+    return res.status(400).json({ error: `payoutKind must be one of: ${PAYOUT_KINDS.join(", ")}` });
+  }
+  if (payoutHandle !== undefined && (typeof payoutHandle !== "string" || payoutHandle.length > 500)) {
+    return res.status(400).json({ error: "payoutHandle must be a string <= 500 chars" });
+  }
+  const artist = await prisma.artist.findUnique({ where: { id: req.params.id } });
+  if (!artist) return res.status(404).json({ error: "artist not found" });
+  if (artist.ownerId !== req.userId) return res.status(403).json({ error: "you do not own this artist profile" });
+
+  const updated = await prisma.artist.update({
+    where: { id: artist.id },
+    data: {
+      ...(payoutKind !== undefined ? { payoutKind: payoutKind || null } : {}),
+      ...(payoutHandle !== undefined ? { payoutHandle: payoutHandle || null } : {}),
+    },
+  });
+  res.json({ artist: updated });
+});
+
 export default router;
