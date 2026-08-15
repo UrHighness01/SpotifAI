@@ -18,8 +18,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const data = await api.me();
       setUser(data.user);
-    } catch {
-      setUser(null);
+    } catch (err) {
+      // A 401 means the session is genuinely invalid — clear it. Anything
+      // else (API restarting, brief network blip) must NOT log the user
+      // out: that cascaded into every page gating on `user` silently
+      // stopping its fetches ("everything is not fetch anymore").
+      const status = (err as { status?: number })?.status;
+      if (status === 401) setUser(null);
+      // otherwise keep the previous user
     } finally {
       setLoading(false);
     }

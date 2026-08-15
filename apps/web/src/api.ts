@@ -23,8 +23,12 @@ async function request(path: string, options: RequestInit = {}) {
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    const err = new Error(body.error || `request failed: ${res.status}`) as Error & { code?: string };
+    const err = new Error(body.error || `request failed: ${res.status}`) as Error & { code?: string; status?: number };
     if (body.code) err.code = body.code;
+    // Expose the HTTP status so callers can distinguish "server down"
+    // (no status) from "the server said no" (4xx/5xx) — e.g. Home only
+    // auto-retries the former.
+    err.status = res.status;
     throw err;
   }
   if (res.status === 204) return null;

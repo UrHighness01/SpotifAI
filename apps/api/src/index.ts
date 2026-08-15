@@ -84,6 +84,12 @@ const authLimiter = rateLimit({
 // skipFailedRequests: rejected requests (429) don't consume quota — otherwise
 // a flapping client clicks like → 429 → clicks again → 429... and locks
 // itself out for the whole window (the "like bug" coming back).
+// skip: only WRITES count against this limiter. Reads (GET/HEAD/OPTIONS) are
+// public catalog browsing — Home loads ~8 GETs, Search typing fires 2 GETs
+// per keystroke, visiting Library fires 3. Counting those against a
+// 60/15min user budget meant normal browsing locked the whole UI out with
+// 429s after a couple of minutes ("everything is not fetch anymore",
+// user-reported). The limiter's purpose is bounding mutating writes.
 const writeLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 60,
@@ -91,6 +97,7 @@ const writeLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: rateLimitKey,
   skipFailedRequests: true,
+  skip: (req) => ["GET", "HEAD", "OPTIONS"].includes(req.method),
 });
 
 const uploadLimiter = rateLimit({
