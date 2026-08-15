@@ -2,20 +2,32 @@ import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../store/player";
 import { api, mediaUrl } from "../api";
 
-declare global {
-  interface Window {
-    spotifaiDesktop?: {
-      isDesktop: boolean;
-      nanoDescribe?: (track: unknown) => Promise<{ ok: boolean; blurb?: string; error?: string }>;
-    };
-  }
-}
-
 function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds)) return "0:00";
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60);
   return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+// Parses 'mood:dark,hypnotic energy:low,mid' into small chip spans.
+function TagChips({ line }: { line: string }) {
+  const chips: string[] = [];
+  for (const part of line.split(" ")) {
+    const [label, values] = part.split(":");
+    if (!values) continue;
+    for (const v of values.split(",")) {
+      if (v) chips.push(`${label}: ${v}`);
+    }
+  }
+  return (
+    <div className="nano-tags">
+      {chips.map((c) => (
+        <span key={c} className="nano-tag">
+          {c}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 export function PlayerBar() {
@@ -25,19 +37,28 @@ export function PlayerBar() {
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.8);
   const [nanoBlurb, setNanoBlurb] = useState<string | null>(null);
+  const [nanoTags, setNanoTags] = useState<string | null>(null);
 
   const track = currentIndex >= 0 ? queue[currentIndex] : null;
 
-  // Nano on-device blurb for the current track (John's next-ideas #5): the
-  // generated "what this is" line in the player, desktop-only, graceful.
+  // Nano on-device blurb + mood/energy tags for the current track (John's
+  // next-ideas #5 + #4): the generated "what this is" line and offline
+  // vibe tags in the player, desktop-only, graceful.
   useEffect(() => {
     setNanoBlurb(null);
+    setNanoTags(null);
     const desktop = window.spotifaiDesktop;
-    if (desktop?.nanoDescribe && track) {
+    if (desktop?.nanoDescribe && desktop?.nanoTags && track) {
       desktop
-        .nanoDescribe({ title: track.title, aiModel: track.aiModel, genre: track.album?.title })
+        .nanoDescribe({ title: track.title, aiModel: track.aiModel, genre: track.album?.title, prompt: track.aiPrompt })
         .then((res) => {
           if (res.ok && res.blurb) setNanoBlurb(res.blurb);
+        })
+        .catch(() => {});
+      desktop
+        .nanoTags({ title: track.title, aiModel: track.aiModel, genre: track.album?.title, prompt: track.aiPrompt })
+        .then((res) => {
+          if (res.ok && res.tags) setNanoTags(res.tags);
         })
         .catch(() => {});
     }
@@ -112,6 +133,9 @@ export function PlayerBar() {
               "what this is" line, desktop-only, honest counterpoint to the
               cold prompt text. */}
           {nanoBlurb && <div className="prompt-echo">{nanoBlurb}</div>}
+          {/* Offline mood/energy tags (John's next-ideas #4): parsed from
+              the engine's 'mood:... energy:...' output, shown as chips. */}
+          {nanoTags && <TagChips line={nanoTags} />}
         </div>
       </div>
 

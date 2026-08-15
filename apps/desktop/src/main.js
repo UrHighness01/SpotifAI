@@ -32,11 +32,16 @@ function startNanoWorker() {
   nanoWorker.on("message", (msg) => {
     if (msg && msg.type === "ready") {
       nanoReady = true;
-    } else if (msg && (msg.type === "blurb" || msg.type === "error") && nanoPending.has(msg.id)) {
+    } else if (msg && (msg.type === "blurb" || msg.type === "tags-result") && nanoPending.has(msg.id)) {
       const { resolve, reject } = nanoPending.get(msg.id);
       nanoPending.delete(msg.id);
       if (msg.type === "blurb") resolve(msg.blurb);
+      else if (msg.type === "tags-result") resolve(msg.tags);
       else reject(new Error(msg.error));
+    } else if (msg && msg.type === "error" && nanoPending.has(msg.id)) {
+      const { reject } = nanoPending.get(msg.id);
+      nanoPending.delete(msg.id);
+      reject(new Error(msg.error));
     }
   });
   nanoWorker.on("exit", () => {
@@ -57,6 +62,18 @@ function nanoDescribe(track) {
     const id = ++nanoRequestSeq;
     nanoPending.set(id, { resolve, reject });
     nanoWorker.send({ type: "generate", id, track });
+  });
+}
+
+function nanoTags(track) {
+  return new Promise((resolve, reject) => {
+    if (!nanoReady || !nanoWorker) {
+      reject(new Error("nano not ready"));
+      return;
+    }
+    const id = ++nanoRequestSeq;
+    nanoPending.set(id, { resolve, reject });
+    nanoWorker.send({ type: "tags", id, track });
   });
 }
 
@@ -87,6 +104,13 @@ app.whenReady().then(() => {
   ipcMain.handle("nano:describe", async (_event, track) => {
     try {
       return { ok: true, blurb: await nanoDescribe(track) };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
+  ipcMain.handle("nano:tags", async (_event, track) => {
+    try {
+      return { ok: true, tags: await nanoTags(track) };
     } catch (err) {
       return { ok: false, error: err.message };
     }

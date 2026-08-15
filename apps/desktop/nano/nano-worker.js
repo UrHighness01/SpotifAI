@@ -72,6 +72,22 @@ function request(prompt) {
   });
 }
 
+// Tags mode: `track_describer --tags < prompt` — no model, instant.
+function requestTags(prompt) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(ENGINE, ["--tags"], { stdio: ["pipe", "pipe", "inherit"] });
+    let out = "";
+    child.stdout.on("data", (chunk) => (out += chunk.toString()));
+    child.on("error", (err) => reject(new Error(`tags spawn error: ${err.message}`)));
+    child.on("close", (code) => {
+      if (out.trim()) resolve(out.trim());
+      else reject(new Error(`tags exited (${code}) with no output`));
+    });
+    child.stdin.write(prompt + "\n");
+    child.stdin.end();
+  });
+}
+
 // Each request gets its own engine run (spawn, write prompt, read output,
 // exit). Simple and race-free; the engine is a few-hundred-KB binary that
 // starts in milliseconds, and blurb generation is not hot-path.
@@ -133,6 +149,16 @@ process.on("message", async (msg) => {
     try {
       const blurb = await request(buildPrompt(msg.track));
       process.send({ type: "blurb", id: msg.id, blurb });
+    } catch (err) {
+      process.send({ type: "error", id: msg.id, error: err.message });
+    }
+  } else if (msg && msg.type === "tags" && msg.track) {
+    // Offline mood/energy tags (John's next-ideas #4): deterministic
+    // keyword classifier via `track_describer --tags` — no model needed,
+    // instant, local. Drives "play similar by vibe" offline.
+    try {
+      const tags = await requestTags(buildPrompt(msg.track));
+      process.send({ type: "tags-result", id: msg.id, tags });
     } catch (err) {
       process.send({ type: "error", id: msg.id, error: err.message });
     }

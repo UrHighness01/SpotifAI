@@ -13,6 +13,9 @@
  * Usage:
  *   track_describer <model.bin> <vocab.tsv> <n_tokens> < prompt
  *   reads a prompt line from stdin, prints the generated continuation.
+ *   track_describer --tags < prompt    (no model needed)
+ *   emits deterministic mood/energy tags from metadata keywords — the
+ *   offline "mood/energy" tag layer (John's next-ideas #4), local + free.
  *
  * Hard rule (John): this generates BLURBS only. It never touches the
  * recommendation endpoints — ranking stays co-occurrence.
@@ -429,7 +432,103 @@ static int encode_prompt(const char *text, int *toks, int max_toks) {
     return n;
 }
 
+/* ── Offline mood/energy tags (John's next-ideas #4) ────────────────────
+ * Deterministic keyword classifier over the metadata prompt (title +
+ * genre + prompt fields). No model, no network, no API — stable tags the
+ * desktop app can compute locally to drive "play similar by vibe" queues
+ * when offline. This is deliberately simple: keyword overlap on a small
+ * controlled vocabulary, matching the platform's honest-scale ethos.
+ */
+typedef struct { const char *word; const char *tag; } TagRule;
+
+static const TagRule MOOD_RULES[] = {
+    {"dark", "dark"}, {"menacing", "dark"}, {"horror", "dark"}, {"industrial", "dark"},
+    {"harsh", "dark"}, {"brooding", "dark"}, {"noise", "dark"}, {"heavy", "dark"},
+    {"dream", "dreamy"}, {"hazy", "dreamy"}, {"soft", "dreamy"}, {"lush", "dreamy"},
+    {"reverb", "dreamy"}, {"weightless", "dreamy"}, {"warm", "dreamy"},
+    {"melancholy", "melancholic"}, {"sad", "melancholic"}, {"lonely", "melancholic"},
+    {"cold", "melancholic"}, {"rain", "melancholic"},
+    {"hypnotic", "hypnotic"}, {"pulse", "hypnotic"}, {"repetitive", "hypnotic"},
+    {"minimal", "hypnotic"}, {"drone", "hypnotic"},
+    {"euphoric", "uplifting"}, {"bright", "uplifting"}, {"sunny", "uplifting"},
+    {"celestial", "uplifting"}, {"golden", "uplifting"},
+    {"tense", "tense"}, {"uneasy", "tense"}, {"fractured", "tense"}, {"glitch", "tense"},
+    {"stutter", "tense"}, {"broken", "tense"},
+};
+
+static const TagRule ENERGY_RULES[] = {
+    {"ambient", "low"}, {"drone", "low"}, {"slow", "low"}, {"quiet", "low"},
+    {"lo-fi", "low"}, {"meditative", "low"}, {"sparse", "low"}, {"mellow", "low"},
+    {"techno", "high"}, {"synthwave", "mid"}, {"house", "high"}, {"breakbeat", "high"},
+    {"driving", "mid"}, {"rolling", "mid"}, {"relentless", "high"}, {"intense", "high"},
+    {"drum", "high"}, {"bass", "mid"}, {"kick", "high"}, {"fast", "high"},
+};
+
+static int has_word(const char *hay, const char *needle) {
+    const char *p = hay;
+    size_t nlen = strlen(needle);
+    while ((p = strstr(p, needle)) != NULL) {
+        char before = p > hay ? p[-1] : ' ';
+        char after = p[nlen];
+        int b_ok = !(before >= 'a' && before <= 'z');
+        int a_ok = !(after >= 'a' && after <= 'z');
+        if (b_ok && a_ok) return 1;
+        p += nlen;
+    }
+    return 0;
+}
+
+static int tag_is_new(const char **seen, int n_seen, const char *tag) {
+    for (int i = 0; i < n_seen; i++) if (strcmp(seen[i], tag) == 0) return 0;
+    return 1;
+}
+
+static void emit_tags(const char *prompt) {
+    /* Dedupe: track which tags we've already printed. */
+    const char *seen[16];
+    int n_seen = 0;
+
+    printf("mood:");
+    int mood_found = 0;
+    for (size_t i = 0; i < sizeof(MOOD_RULES) / sizeof(MOOD_RULES[0]) && n_seen < 16; i++) {
+        if (has_word(prompt, MOOD_RULES[i].word)) {
+            const char *tag = MOOD_RULES[i].tag;
+            if (tag_is_new(seen, n_seen, tag)) {
+                printf("%s%s", mood_found ? "," : "", tag);
+                seen[n_seen++] = tag;
+                mood_found = 1;
+            }
+        }
+    }
+    if (!mood_found) printf("neutral");
+
+    printf(" energy:");
+    int en_found = 0;
+    for (size_t i = 0; i < sizeof(ENERGY_RULES) / sizeof(ENERGY_RULES[0]) && n_seen < 16; i++) {
+        if (has_word(prompt, ENERGY_RULES[i].word)) {
+            const char *tag = ENERGY_RULES[i].tag;
+            if (tag_is_new(seen, n_seen, tag)) {
+                printf("%s%s", en_found ? "," : "", tag);
+                seen[n_seen++] = tag;
+                en_found = 1;
+            }
+        }
+    }
+    if (!en_found) printf("mid");
+    printf("\n");
+}
+
 int main(int argc, char **argv) {
+    if (argc >= 2 && strcmp(argv[1], "--tags") == 0) {
+        char buf[2048] = {0};
+        if (argc >= 3) {
+            snprintf(buf, sizeof(buf), "%s", argv[2]);
+        } else {
+            fgets(buf, sizeof(buf), stdin);
+        }
+        emit_tags(buf);
+        return 0;
+    }
     if (argc < 4) {
         fprintf(stderr, "usage: %s <model.bin> <vocab.tsv> <n_tokens> [prompt]\n", argv[0]);
         return 1;

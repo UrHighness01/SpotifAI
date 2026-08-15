@@ -61,3 +61,16 @@ export interface ApiUser {
   createdAt: string;
   emailVerified: boolean;
 }
+
+// Shared global type for the Electron preload bridge (nano blurb + tags).
+export interface SpotifaiDesktop {
+  isDesktop: boolean;
+  nanoDescribe?: (track: unknown) => Promise<{ ok: boolean; blurb?: string; error?: string }>;
+  nanoTags?: (track: unknown) => Promise<{ ok: boolean; tags?: string; error?: string }>;
+}
+
+declare global {
+  interface Window {
+    spotifaiDesktop?: SpotifaiDesktop;
+  }
+}

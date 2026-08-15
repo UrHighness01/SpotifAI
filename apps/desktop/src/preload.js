@@ -7,5 +7,7 @@ contextBridge.exposeInMainWorld("spotifaiDesktop", {
   // degrade gracefully when the model isn't present (dev machines, early
   // boot), so callers should hide the section on !ok.
   nanoDescribe: (track) => ipcRenderer.invoke("nano:describe", track),
+  // Offline mood/energy tags (John's next-ideas #4) — instant, no model.
+  nanoTags: (track) => ipcRenderer.invoke("nano:tags", track),
   nanoStatus: () => ipcRenderer.invoke("nano:status"),
 });

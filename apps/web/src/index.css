@@ -535,6 +535,22 @@ img.card-art {
   color: var(--accent);
 }
 
+/* Offline mood/energy tag chips (PlayerBar, nano --tags) */
+.nano-tags {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  margin-top: 0.2rem;
+}
+.nano-tag {
+  font-size: 0.68rem;
+  padding: 0.05rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-dim);
+  text-transform: capitalize;
+}
+
 .player-center {
   display: flex;
   flex-direction: column;

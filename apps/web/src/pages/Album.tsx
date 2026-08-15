@@ -4,15 +4,6 @@ import { api } from "../api";
 import { TrackRow } from "../components/TrackRow";
 import type { ApiAlbum, ApiTrack } from "../types";
 
-declare global {
-  interface Window {
-    spotifaiDesktop?: {
-      isDesktop: boolean;
-      nanoDescribe?: (track: unknown) => Promise<{ ok: boolean; blurb?: string; error?: string }>;
-    };
-  }
-}
-
 export function Album() {
   const { id } = useParams();
   const [album, setAlbum] = useState<(ApiAlbum & { tracks: ApiTrack[] }) | null>(null);
