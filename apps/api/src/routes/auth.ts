@@ -116,7 +116,12 @@ router.post("/resend-verification", async (req, res) => {
   const { email } = req.body || {};
   const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
   const genericResponse = () =>
-    res.json({ message: "If that account exists and isn't verified yet, a new verification email was sent." });
+    res.json({
+      message: "If that account exists and isn't verified yet, a new verification email was sent.",
+      // Dev mode: include the fresh link so the user can verify (the email is
+      // only in the console). Absent otherwise.
+      ...(res.locals.devVerifyUrl ? { devVerifyUrl: res.locals.devVerifyUrl } : {}),
+    });
 
   await withTimingFloor(async () => {
     if (!normalizedEmail) return;
@@ -133,6 +138,13 @@ router.post("/resend-verification", async (req, res) => {
     });
     const verifyUrl = `${WEB_ORIGIN}/verify-email?token=${raw}`;
     await sendVerificationEmail(user.email, verifyUrl);
+    // Dev mode (no SMTP): the email is only printed to the console, so return
+    // the fresh verification link so the user can complete verification. Same
+    // anti-enumeration posture otherwise — this only fires for an existing,
+    // unverified account, and only in dev.
+    if (process.env.NODE_ENV !== "production" && !process.env.SMTP_HOST) {
+      res.locals.devVerifyUrl = verifyUrl;
+    }
   });
 
   genericResponse();
