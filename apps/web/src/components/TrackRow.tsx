@@ -121,7 +121,7 @@ export function TrackRow({ track, index, queue, onMetaChange }: Props) {
                     )}
                     {track.remixOf._count?.attestations ? (
                       <span className={`rights-badge provenance`} style={{ marginLeft: "0.4rem" }}>
-                        {track.remixOf._count.attestations} listener attest{track.remixOf._count.attestations === 1 ? "" : "s"}
+                        {track.remixOf._count.attestations} verified attest{track.remixOf._count.attestations === 1 ? "" : "s"}
                       </span>
                     ) : null}
                   </span>
@@ -245,9 +245,9 @@ function AttestSection({ track }: { track: ApiTrack }) {
   return (
     <div style={{ marginTop: "0.3rem" }}>
       <div className="ai-detail-label">
-        Attested by {attestations ? attestations.length : "…"} listener{attestations && attestations.length === 1 ? "" : "s"}
+        Attested by {attestations ? attestations.length : "…"} verified listener{attestations && attestations.length === 1 ? "" : "s"}
         <span style={{ textTransform: "none", letterSpacing: 0, opacity: 0.75 }}>
-          {" "}(logged-in users who verified this audio — count is not sybil-resistant)
+          {" "}(email-verified accounts only — anti-sybil floor)
         </span>
       </div>
       {!done && (

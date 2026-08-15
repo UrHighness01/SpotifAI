@@ -443,6 +443,16 @@ router.post("/:id/attest", requireAuth, async (req: AuthedRequest, res) => {
     return res.status(429).json({ error: "too many attestations — try again later" });
   }
 
+  // Anti-sybil email floor (John's ranked #3 — the decision at its minimum
+  // viable level): only EMAIL-VERIFIED accounts may attest, so the count
+  // means 'verified listeners', not 'burners'. (Stronger mechanisms —
+  // device attestation, PoW — are future options per the trust-floor
+  // runbook; this is the floor that makes the count honest today.)
+  const user = await prisma.user.findUnique({ where: { id: req.userId! }, select: { emailVerified: true } });
+  if (!user?.emailVerified) {
+    return res.status(403).json({ error: "email verification required to attest (anti-sybil floor)" });
+  }
+
   const track = await prisma.track.findUnique({ where: { id: req.params.id }, select: { id: true, fingerprintHash: true } });
   if (!track) return res.status(404).json({ error: "track not found" });
   if (!track.fingerprintHash) return res.status(400).json({ error: "track has no recorded fingerprint to attest to" });
