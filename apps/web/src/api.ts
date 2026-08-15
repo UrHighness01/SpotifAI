@@ -1,5 +1,10 @@
 export const API_BASE = "http://localhost:4000";
 
+// Payout-report address (production-readiness debt): the placeholder is
+// replaced via Vite env (VITE_REPORT_ADDRESS) at build time in production.
+// The Trust-Floor runbook requires this to be a real inbox before launch.
+export const REPORT_ADDRESS: string = (import.meta as { env?: Record<string, string> }).env?.VITE_REPORT_ADDRESS ?? "abuse@spotifai.local";
+
 export function mediaUrl(relPath: string | null | undefined): string | null {
   return relPath ? `${API_BASE}/media/${relPath}` : null;
 }

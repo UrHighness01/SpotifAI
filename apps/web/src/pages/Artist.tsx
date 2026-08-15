@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { api, API_BASE, mediaUrl } from "../api";
+import { api, API_BASE, REPORT_ADDRESS, mediaUrl } from "../api";
 import { TrackRow } from "../components/TrackRow";
 import { clampText } from "../utils/text";
 import { useAuth } from "../auth";
@@ -77,7 +77,7 @@ export function Artist() {
             {" "}(direct to artist, no middleman · {new URL(artist.payoutHandle).hostname})
           </span>
           <a
-            href={`mailto:abuse@spotifai.local?subject=Report payout: ${encodeURIComponent(artist.name)} (${encodeURIComponent(artist.payoutHandle)})`}
+            href={`mailto:${REPORT_ADDRESS}?subject=Report payout: ${encodeURIComponent(artist.name)} (${encodeURIComponent(artist.payoutHandle)})`}
             className="report-link"
           >
             {" "}· report suspicious
