@@ -20,6 +20,25 @@ import libraryRoutes from "./routes/library";
 import playlistRoutes from "./routes/playlists";
 import followRoutes from "./routes/follows";
 import collabRoutes from "./routes/collabs";
+import { verifySessionToken } from "./lib/jwt";
+
+// Rate-limit keys: authenticated requests are bucketed PER USER, anonymous
+// ones per IP. express-rate-limit defaults to IP — on localhost every client
+// (and every test script) shares ::1, so one active session exhausted the
+// shared bucket and EVERY write started returning 429. In the UI that meant
+// the optimistic heart filled, the save got 429'd, and the store rolled back
+// — "likes and auto-unlikes rapidly".
+function rateLimitKey(req: express.Request): string {
+  const token = (req as express.Request & { cookies?: Record<string, string> }).cookies?.token;
+  if (token) {
+    try {
+      return `user:${verifySessionToken(token).userId}`;
+    } catch {
+      /* invalid/expired token — fall through to IP */
+    }
+  }
+  return req.ip ?? "unknown";
+}
 import corpusRoutes from "./routes/corpus";
 
 const app = express();
@@ -45,6 +64,7 @@ const writeLimiter = rateLimit({
   limit: 60,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: rateLimitKey,
 });
 
 const uploadLimiter = rateLimit({
@@ -52,6 +72,7 @@ const uploadLimiter = rateLimit({
   limit: 30,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: rateLimitKey,
 });
 
 // Tighter than authLimiter: these two send mail, so an unbounded caller can
