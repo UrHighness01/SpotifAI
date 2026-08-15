@@ -19,7 +19,9 @@ export function TrackCard({ track, queue }: { track: ApiTrack; queue?: ApiTrack[
         )}
         <LikeButton trackId={track.id} className="like-btn-on-card" />
         {/* Clicking the play button bubbles to the card onClick (plays). */}
-        <button className="card-play-btn" aria-label={`Play ${track.title}`} />
+        <button className="card-play-btn" aria-label={`Play ${track.title}`}>
+          <PlayIcon />
+        </button>
       </div>
       <div className="card-title">{track.title}</div>
       <div className="card-sub">{track.artist?.name}</div>

@@ -46,6 +46,12 @@ export function Artist() {
   return (
     <div>
       <h1 className="section-title">{artist.name}</h1>
+      {/* You-own badge (user's ask): make the link to my account explicit —
+          previously nothing distinguished 'your artist' from anyone else's,
+          so Virtual Verse felt like it belonged to nobody. */}
+      {user && artist.owner?.id === user.id && (
+        <p className="owner-badge">✓ You own this artist — it's linked to your account</p>
+      )}
       <p style={{ color: "var(--text-dim)" }}>
         {artist.bio} · <span style={{ color: "var(--accent)" }}>{artist.aiModel}</span>
       </p>

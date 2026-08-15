@@ -75,7 +75,10 @@ export function PlayerBar() {
   // when the generator wasn't disclosed — the tiny model fabricates a
   // "made with X" description from nothing (user-reported wrong info), so
   // no blurb is more honest than a hallucinated one. Tags are a
-  // deterministic keyword classifier and stay.
+  // deterministic keyword classifier; when no keyword matched, the engine
+  // returns the default fallback 'mood:neutral energy:mid' — that's "no
+  // signal", so the chips are hidden rather than claiming a vibe the
+  // classifier couldn't detect (user asked: make smarter or hide).
   useEffect(() => {
     setNanoBlurb(null);
     setNanoTags(null);
@@ -94,7 +97,8 @@ export function PlayerBar() {
       desktop
         .nanoTags({ title: track.title, aiModel: track.aiModel, genre: track.album?.title, prompt: track.aiPrompt })
         .then((res) => {
-          if (res.ok && res.tags) setNanoTags(res.tags);
+          // Engine's "nothing matched" fallback — hide the chips entirely.
+          if (res.ok && res.tags && !res.tags.includes("mood:neutral energy:mid")) setNanoTags(res.tags);
         })
         .catch(() => {});
     }

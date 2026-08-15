@@ -302,6 +302,13 @@ img.card-art {
   display: inline-flex;
   align-items: center;
 }
+/* On cards the button is absolutely positioned against .card-art-wrap, so
+   this wrapper must NOT become its positioning context — otherwise the
+   heart drifts out of the cover's top-right corner (user-reported). The
+   error toast inside still anchors to the wrap in rows/player. */
+.card-art-wrap .like-wrap {
+  position: static;
+}
 .like-btn {
   background: none;
   border: none;
@@ -571,6 +578,19 @@ img.card-art {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--accent);
+}
+
+/* "You own this artist" indicator (Artist page) — makes the link to my
+   account explicit instead of the artist feeling ownerless. */
+.owner-badge {
+  display: inline-block;
+  padding: 0.2rem 0.7rem;
+  background: var(--accent-dim);
+  color: #000;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
 }
 
 /* Support link (Tier A #2): direct-to-artist payout, no middleman */

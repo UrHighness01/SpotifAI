@@ -49,7 +49,26 @@ const PORT = process.env.PORT || 4000;
 const CORS_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:5173";
 
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
-app.use(cors({ origin: CORS_ORIGIN, credentials: true }));
+// Dev-friendly CORS: allow the configured origin AND any localhost port.
+// Vite bounces to 5174/5175 when 5173 is taken (concurrently -k races),
+// and a strict single-origin list makes every credentialed request (me(),
+// likes, myArtists) fail CORS → the app thinks you're logged out and your
+// own artists look "unlinked". In dev we allow any localhost origin;
+// production still requires the exact CORS_ORIGIN.
+app.use(
+  cors({
+    origin(origin, cb) {
+      if (!origin) return cb(null, true); // non-browser / same-origin
+      const allowed = CORS_ORIGIN.split(",").map((s) => s.trim()).filter(Boolean);
+      if (allowed.includes(origin)) return cb(null, true);
+      if (process.env.NODE_ENV !== "production" && /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(origin)) {
+        return cb(null, true);
+      }
+      return cb(null, false);
+    },
+    credentials: true,
+  })
+);
 app.use(cookieParser());
 app.use(express.json());
 
