@@ -89,7 +89,7 @@ router.post(
 
     if (!audioFile) return cleanupAndReject(400, "audio file is required");
 
-    const { title, artistId, albumId, durationSec, aiModel, aiPrompt, aiGenerationNotes, rightsNotice } = req.body || {};
+    const { title, artistId, albumId, durationSec, aiModel, aiPrompt, aiGenerationNotes, rightsNotice, licensePriceUsd, licenseTerms } = req.body || {};
     if (!title || !artistId || !aiModel) {
       return cleanupAndReject(400, "title, artistId, and aiModel are required");
     }
@@ -131,6 +131,8 @@ router.post(
         aiPrompt: aiPrompt || undefined,
         aiGenerationNotes: aiGenerationNotes || undefined,
         rightsNotice: rightsNotice || "all-rights-reserved",
+        licensePriceUsd: licensePriceUsd !== undefined ? Number(licensePriceUsd) : undefined,
+        licenseTerms: licenseTerms || undefined,
         fingerprintHash: fingerprint?.hash,
         fingerprintModel: fingerprint?.model,
         fingerprintCapturedAt: fingerprint ? new Date() : undefined,

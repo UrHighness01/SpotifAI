@@ -73,6 +73,8 @@ model Track {
   aiPrompt            String?
   aiGenerationNotes    String?
   rightsNotice        String? @default("all-rights-reserved")
+  licensePriceUsd     Float?
+  licenseTerms        String?
   remixOfId           String?
   remixOf             Track?  @relation("RemixChain", fields: [remixOfId], references: [id])
   remixes             Track[] @relation("RemixChain")

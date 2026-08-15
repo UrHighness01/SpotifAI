@@ -90,7 +90,20 @@ export function TrackRow({ track, index, queue, onMetaChange }: Props) {
               <div>
                 <span className="ai-detail-label">Rights:</span>{" "}
                 <span className={`rights-badge ${track.rightsNotice}`}>{track.rightsNotice.replace(/-/g, " ")}</span>
+                {/* License + price (Tier A #3): each track is a sellable
+                    asset without a storefront — buyers deal with the
+                    uploader directly, platform stays custody-free. */}
+                {track.licensePriceUsd !== null && track.licensePriceUsd !== undefined && (
+                  <span className="license-price">
+                    {" "}· ${track.licensePriceUsd.toFixed(2)}
+                  </span>
+                )}
               </div>
+              {track.licenseTerms && (
+                <div title={track.licenseTerms}>
+                  <span className="ai-detail-label">License terms:</span> {clampText(track.licenseTerms, 200)}
+                </div>
+              )}
               {/* Remix/continuation attribution (John's next-ideas #7):
                   metadata-only community-graph link — builds the
                   remix-chain discovery surface. */}

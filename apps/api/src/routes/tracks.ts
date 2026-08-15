@@ -284,9 +284,16 @@ router.get("/:id", async (req, res) => {
 const RIGHTS_OPTIONS = ["all-rights-reserved", "cc-by", "cc-by-sa", "cc-by-nc", "public-domain"];
 
 router.patch("/:id/meta", requireAuth, async (req: AuthedRequest, res) => {
-  const { aiPrompt, aiGenerationNotes, rightsNotice, remixOfId } = req.body || {};
-  if (aiPrompt === undefined && aiGenerationNotes === undefined && rightsNotice === undefined && remixOfId === undefined) {
-    return res.status(400).json({ error: "aiPrompt, aiGenerationNotes, rightsNotice, or remixOfId is required" });
+  const { aiPrompt, aiGenerationNotes, rightsNotice, remixOfId, licensePriceUsd, licenseTerms } = req.body || {};
+  if (
+    aiPrompt === undefined &&
+    aiGenerationNotes === undefined &&
+    rightsNotice === undefined &&
+    remixOfId === undefined &&
+    licensePriceUsd === undefined &&
+    licenseTerms === undefined
+  ) {
+    return res.status(400).json({ error: "aiPrompt, aiGenerationNotes, rightsNotice, remixOfId, licensePriceUsd, or licenseTerms is required" });
   }
   const MAX = 32 * 1024;
   if (aiPrompt !== undefined && (typeof aiPrompt !== "string" || aiPrompt.length > MAX)) {
@@ -297,6 +304,14 @@ router.patch("/:id/meta", requireAuth, async (req: AuthedRequest, res) => {
   }
   if (rightsNotice !== undefined && !RIGHTS_OPTIONS.includes(rightsNotice)) {
     return res.status(400).json({ error: `rightsNotice must be one of: ${RIGHTS_OPTIONS.join(", ")}` });
+  }
+  // License + price (Tier A #3): structured sellable-asset metadata, no
+  // storefront, no custody — buyers deal with the uploader directly.
+  if (licensePriceUsd !== undefined && (typeof licensePriceUsd !== "number" || licensePriceUsd < 0 || licensePriceUsd > 100000)) {
+    return res.status(400).json({ error: "licensePriceUsd must be a number between 0 and 100000" });
+  }
+  if (licenseTerms !== undefined && (typeof licenseTerms !== "string" || licenseTerms.length > 2000)) {
+    return res.status(400).json({ error: "licenseTerms must be a string <= 2000 chars" });
   }
 
   const track = await prisma.track.findUnique({ where: { id: req.params.id }, include: { artist: true } });
@@ -347,6 +362,8 @@ router.patch("/:id/meta", requireAuth, async (req: AuthedRequest, res) => {
       ...(aiGenerationNotes !== undefined ? { aiGenerationNotes: aiGenerationNotes || null } : {}),
       ...(rightsNotice !== undefined ? { rightsNotice: rightsNotice || "all-rights-reserved" } : {}),
       ...(remixTarget !== undefined ? { remixOfId: remixTarget } : {}),
+      ...(licensePriceUsd !== undefined ? { licensePriceUsd } : {}),
+      ...(licenseTerms !== undefined ? { licenseTerms: licenseTerms || null } : {}),
     },
     include: TRACK_INCLUDE,
   });

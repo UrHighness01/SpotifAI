@@ -30,6 +30,8 @@ export interface ApiTrack {
   aiPrompt: string | null;
   aiGenerationNotes: string | null;
   rightsNotice: string;
+  licensePriceUsd: number | null;
+  licenseTerms: string | null;
   remixOfId: string | null;
   remixOf?: ApiTrack | null;
   remixes?: ApiTrack[];
