@@ -1,0 +1,46 @@
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { api } from "../api";
+import { TrackRow } from "../components/TrackRow";
+import type { ApiArtist, ApiTrack, ApiAlbum } from "../types";
+
+export function Artist() {
+  const { id } = useParams();
+  const [artist, setArtist] = useState<(ApiArtist & { tracks: ApiTrack[]; albums: ApiAlbum[] }) | null>(null);
+
+  useEffect(() => {
+    if (id) api.artist(id).then((d) => setArtist(d.artist));
+  }, [id]);
+
+  if (!artist) return <div>Loading…</div>;
+
+  return (
+    <div>
+      <h1 className="section-title">{artist.name}</h1>
+      <p style={{ color: "var(--text-dim)" }}>
+        {artist.bio} · <span style={{ color: "var(--accent)" }}>{artist.aiModel}</span>
+      </p>
+
+      {artist.albums.length > 0 && (
+        <>
+          <h2 style={{ marginTop: "1.5rem" }}>Albums</h2>
+          <div className="card-grid">
+            {artist.albums.map((album) => (
+              <Link key={album.id} className="card" to={`/album/${album.id}`}>
+                <div className="card-art">💿</div>
+                <div className="card-title">{album.title}</div>
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
+
+      <h2 style={{ marginTop: "1.5rem" }}>Tracks</h2>
+      <div>
+        {artist.tracks.map((track, i) => (
+          <TrackRow key={track.id} track={{ ...track, artist }} index={i} queue={artist.tracks.map((t) => ({ ...t, artist }))} />
+        ))}
+      </div>
+    </div>
+  );
+}
