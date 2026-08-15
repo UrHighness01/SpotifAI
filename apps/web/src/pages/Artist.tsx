@@ -3,15 +3,43 @@ import { Link, useParams } from "react-router-dom";
 import { api, mediaUrl } from "../api";
 import { TrackRow } from "../components/TrackRow";
 import { clampText } from "../utils/text";
+import { useAuth } from "../auth";
 import type { ApiArtist, ApiTrack, ApiAlbum } from "../types";
 
 export function Artist() {
   const { id } = useParams();
+  const { user } = useAuth();
   const [artist, setArtist] = useState<(ApiArtist & { tracks: ApiTrack[]; albums: ApiAlbum[] }) | null>(null);
+  const [following, setFollowing] = useState(false);
+  const [followBusy, setFollowBusy] = useState(false);
 
   useEffect(() => {
     if (id) api.artist(id).then((d) => setArtist(d.artist));
   }, [id]);
+
+  // Is this artist in my follows? (Only when logged in.)
+  useEffect(() => {
+    if (user && id) {
+      api
+        .follows()
+        .then((d) => setFollowing(d.follows.some((a: ApiArtist) => a.id === id)))
+        .catch(() => {});
+    }
+  }, [user, id]);
+
+  const toggleFollow = async () => {
+    if (!id || followBusy) return;
+    setFollowBusy(true);
+    try {
+      if (following) await api.unfollowArtist(id);
+      else await api.followArtist(id);
+      setFollowing((f) => !f);
+    } catch {
+      /* 400 (own profile) / 401 handled silently */
+    } finally {
+      setFollowBusy(false);
+    }
+  };
 
   if (!artist) return <div>Loading…</div>;
 
@@ -21,6 +49,13 @@ export function Artist() {
       <p style={{ color: "var(--text-dim)" }}>
         {artist.bio} · <span style={{ color: "var(--accent)" }}>{artist.aiModel}</span>
       </p>
+      {/* Follow the uploader (John's Tier 2 #5): no labels means the
+          uploader's fanbase is the distribution engine. */}
+      {user && (
+        <button className="ai-edit-btn" onClick={toggleFollow} disabled={followBusy}>
+          {following ? "Following ✓" : "Follow"}
+        </button>
+      )}
       {/* Differentiating brand (John's ideas pass #6): the artist IS the
           uploader's own profile — no label or distributor layer in between.
           Made explicit so the platform's model is self-evident. */}

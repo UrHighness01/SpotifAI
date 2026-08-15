@@ -22,6 +22,7 @@ model User {
   playlists                 Playlist[]
   librarySaves              LibrarySave[]
   artists                   Artist[]
+  follows                   Follow[]
 }
 
 model Artist {
@@ -35,6 +36,18 @@ model Artist {
   owner      User     @relation(fields: [ownerId], references: [id])
   albums     Album[]
   tracks     Track[]
+  followedBy Follow[]
+}
+
+model Follow {
+  id        String   @id @default(cuid())
+  userId    String
+  artistId  String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  artist    Artist   @relation(fields: [artistId], references: [id])
+
+  @@unique([userId, artistId])
 }
 
 model Album {

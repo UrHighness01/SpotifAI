@@ -18,6 +18,7 @@ import uploadRoutes from "./routes/upload";
 import streamRoutes from "./routes/stream";
 import libraryRoutes from "./routes/library";
 import playlistRoutes from "./routes/playlists";
+import followRoutes from "./routes/follows";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -89,6 +90,7 @@ app.use("/upload", uploadLimiter, uploadRoutes);
 app.use("/stream", streamLimiter, streamRoutes);
 app.use("/library", writeLimiter, libraryRoutes);
 app.use("/playlists", writeLimiter, playlistRoutes);
+app.use("/follows", writeLimiter, followRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: "not found" });

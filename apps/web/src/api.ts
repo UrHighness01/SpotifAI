@@ -68,6 +68,11 @@ export const api = {
   saveTrack: (trackId: string) => request(`/library/${trackId}`, { method: "POST" }),
   unsaveTrack: (trackId: string) => request(`/library/${trackId}`, { method: "DELETE" }),
 
+  follows: () => request("/follows"),
+  followArtist: (artistId: string) => request(`/follows/${artistId}`, { method: "POST" }),
+  unfollowArtist: (artistId: string) => request(`/follows/${artistId}`, { method: "DELETE" }),
+  followFeed: () => request("/follows/feed"),
+
   upload: (formData: FormData) => request("/upload/track", { method: "POST", body: formData }),
 
   playlists: () => request("/playlists"),

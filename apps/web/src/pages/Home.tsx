@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api, mediaUrl } from "../api";
 import type { ApiArtist, ApiTrack } from "../types";
 import { usePlayerStore } from "../store/player";
+import { TrackRow } from "../components/TrackRow";
 
 const PlayIcon = () => (
   <svg viewBox="0 0 24 24" width="18" height="18" fill="#000" aria-hidden="true">
@@ -22,6 +23,7 @@ export function Home() {
   const [tracks, setTracks] = useState<ApiTrack[]>([]);
   const [trending, setTrending] = useState<ApiTrack[]>([]);
   const [recommended, setRecommended] = useState<ApiTrack[]>([]);
+  const [followFeed, setFollowFeed] = useState<ApiTrack[]>([]);
   const playTrack = usePlayerStore((s) => s.playTrack);
 
   useEffect(() => {
@@ -31,6 +33,9 @@ export function Home() {
     // Real co-occurrence recommendations (logged-in: taste-based; logged-out:
     // trending fallback). Replaces the old seeded-shuffle stopgap.
     api.recommendedTracks().then((d) => setRecommended(d.tracks));
+    // New-drop feed from followed uploaders (John's Tier 2 #5) — 401 for
+    // anonymous, handled silently.
+    api.followFeed().then((d) => setFollowFeed(d.tracks)).catch(() => {});
   }, []);
 
   return (
@@ -106,6 +111,20 @@ export function Home() {
                 <div className="card-title">{track.title}</div>
                 <div className="card-sub">{track.artist?.name}</div>
               </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* New drops from followed uploaders (John's Tier 2 #5). */}
+      {followFeed.length > 0 && (
+        <>
+          <div className="section-head">
+            <h2 className="section-title">New from artists you follow</h2>
+          </div>
+          <div>
+            {followFeed.map((track, i) => (
+              <TrackRow key={track.id} track={track} index={i} queue={followFeed} />
             ))}
           </div>
         </>
