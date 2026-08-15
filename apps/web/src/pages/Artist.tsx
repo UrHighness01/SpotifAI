@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { api, mediaUrl } from "../api";
+import { api, API_BASE, mediaUrl } from "../api";
 import { TrackRow } from "../components/TrackRow";
 import { clampText } from "../utils/text";
 import { useAuth } from "../auth";
@@ -169,7 +169,7 @@ export function Artist() {
               return remixWithSource > 0 ? ` · ${remixWithSource} remix(es) point to verifiable sources` : "";
             })()}
             .{" "}
-            <a href={`/api/artists/${artist.id}/provenance-manifest`} target="_blank" rel="noopener noreferrer" className="support-link" style={{ fontSize: "0.8rem" }}>
+            <a href={`${API_BASE}/artists/${artist.id}/provenance-manifest`} target="_blank" rel="noopener noreferrer" className="support-link" style={{ fontSize: "0.8rem" }}>
               Signed manifest →
             </a>
           </p>

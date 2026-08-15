@@ -3,7 +3,7 @@ import path from "path";
 import { prisma } from "../db";
 import { requireAuth, AuthedRequest } from "../middleware/auth";
 import { writeCover } from "../lib/cover-art";
-import { signManifest, ProvenanceManifest } from "../lib/manifest";
+import { signManifest, MANIFEST_PUBLIC_KEY, ProvenanceManifest } from "../lib/manifest";
 
 const router = Router();
 
@@ -23,6 +23,14 @@ router.get("/", async (req, res) => {
   res.json({ artists });
 });
 
+// The published public key (Tier G #1): a stable, fetch-independent place
+// for anyone to get the key that verifies provenance signatures — so the
+// claim is verifiable even if a specific manifest link changes. MUST be
+// defined before /:id so the literal path isn't captured as an artist id.
+router.get("/provenance-public-key", (_req, res) => {
+  res.json({ key: MANIFEST_PUBLIC_KEY, algorithm: "ed25519", schema: "spotifai-provenance-v1" });
+});
+
 router.get("/:id", async (req, res) => {
   const artist = await prisma.artist.findUnique({
     where: { id: req.params.id },
@@ -39,11 +47,11 @@ router.get("/:id", async (req, res) => {
   res.json({ artist });
 });
 
-// Signed, exportable provenance manifest (John's Tier D #1): public by
-// design — anyone can download and verify the hashes offline against their
-// own copy of the audio, without trusting the website. The signature
-// (HMAC-SHA256 under the platform key) pins the manifest to the platform,
-// so tampering is detectable.
+// Signed, exportable provenance manifest (John's Tier D #1 + G #1): public
+// by design — anyone can download and verify the hashes offline against
+// their own copy of the audio. Signed with Ed25519; the public key is
+// embedded in the manifest AND published separately, so verification never
+// depends on trusting the website.
 router.get("/:id/provenance-manifest", async (req, res) => {
   const artist = await prisma.artist.findUnique({
     where: { id: req.params.id },
@@ -66,6 +74,7 @@ router.get("/:id/provenance-manifest", async (req, res) => {
       recordedAt: t.fingerprintCapturedAt?.toISOString() ?? "",
     })),
     signature: "", // replaced below
+    publicKey: MANIFEST_PUBLIC_KEY,
   };
   const { signature, ...payload } = manifest;
   manifest.signature = signManifest(JSON.stringify(payload));

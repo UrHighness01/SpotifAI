@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:4000";
+export const API_BASE = "http://localhost:4000";
 
 export function mediaUrl(relPath: string | null | undefined): string | null {
   return relPath ? `${API_BASE}/media/${relPath}` : null;

@@ -1,22 +1,17 @@
-// Hash-check tooling (John's Tier D #2): verify a track's provenance
-// offline against a downloaded manifest. Ships the provenance claim as a
-// utility listeners can run on their own files.
+// Hash-check tooling (John's Tier D #2 + G #1): verify a track's
+// provenance offline against a downloaded manifest. Ships the provenance
+// claim as a utility listeners can run on their own files.
 //
 // Usage:
 //   node apps/api/scripts/verify-provenance.js <manifest-url> <audio-file> [trackIndex]
 //   # trackIndex defaults to 0 (first track in the manifest)
 //
-// Verifies: (1) the manifest signature is valid under the platform key,
+// Verifies: (1) the manifest's Ed25519 signature against the public key
+// embedded IN the manifest (self-describing, so no separate fetch needed),
 // (2) the local audio file's byte-hash matches the manifest entry.
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
-
-const MANIFEST_SIGNING_KEY = process.env.MANIFEST_SIGNING_KEY || "dev-manifest-signing-key-change-me";
-
-function sign(payload: string): string {
-  return crypto.createHmac("sha256", MANIFEST_SIGNING_KEY).update(payload).digest("hex");
-}
 
 function sha256Hex(buf: Buffer): string {
   return crypto.createHash("sha256").update(buf).digest("hex").slice(0, 16);
@@ -43,11 +38,17 @@ async function main() {
     process.exit(1);
   }
   const { signature, ...payload } = manifest;
-  const expected = sign(JSON.stringify(payload));
+  const valid = (() => {
+    try {
+      return crypto.verify(null, Buffer.from(JSON.stringify(payload)), manifest.publicKey, Buffer.from(signature, "base64"));
+    } catch {
+      return false;
+    }
+  })();
   console.log(`manifest: ${manifest.artistName} (${manifest.artistId})`);
-  console.log(`signature: ${signature === expected ? "VALID ✓" : "INVALID ✗"}`);
-  if (signature !== expected) {
-    console.error("manifest signature does not verify — tampered or wrong key");
+  console.log(`signature: ${valid ? "VALID ✓" : "INVALID ✗"}`);
+  if (!valid) {
+    console.error("manifest signature does not verify — tampered, wrong key, or not Ed25519");
     process.exit(1);
   }
 
