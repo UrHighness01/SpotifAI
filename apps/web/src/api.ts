@@ -81,6 +81,7 @@ export const api = {
   library: () => request("/library"),
   saveTrack: (trackId: string) => request(`/library/${trackId}`, { method: "POST" }),
   unsaveTrack: (trackId: string) => request(`/library/${trackId}`, { method: "DELETE" }),
+  verifiedMine: () => request("/tracks/verified-mine"),
 
   follows: () => request("/follows"),
   followArtist: (artistId: string) => request(`/follows/${artistId}`, { method: "POST" }),

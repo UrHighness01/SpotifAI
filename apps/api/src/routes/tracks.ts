@@ -277,6 +277,21 @@ router.get("/recommended", async (req, res) => {
   res.json({ tracks, source: "trending" });
 });
 
+// Verified-library (John's #1 — the reward-the-honesty-loop feature): the
+// listener's OWN history of tracks they attested — 'tracks where I hold the
+// actual audio and confirmed it matches the recorded fingerprint.' Framed
+// as personal history (like playlists), self-evidently true, no anti-sybil
+// needed (per-user data), and it makes verifying audio visible + valued.
+// MUST be before /:id so 'verified-mine' isn't captured as an id.
+router.get("/verified-mine", requireAuth, async (req: AuthedRequest, res) => {
+  const attestations = await prisma.attestation.findMany({
+    where: { userId: req.userId! },
+    include: { track: { include: TRACK_INCLUDE } },
+    orderBy: { createdAt: "desc" },
+  });
+  res.json({ verified: attestations.map((a) => ({ ...a.track, verifiedAt: a.createdAt })) });
+});
+
 router.get("/:id", async (req, res) => {
   const track = await prisma.track.findUnique({
     where: { id: req.params.id },
