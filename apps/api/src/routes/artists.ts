@@ -67,6 +67,12 @@ router.patch("/:id/payout", requireAuth, async (req: AuthedRequest, res) => {
   if (payoutHandle !== undefined && (typeof payoutHandle !== "string" || payoutHandle.length > 500)) {
     return res.status(400).json({ error: "payoutHandle must be a string <= 500 chars" });
   }
+  // The handle becomes an href in the renderer — only http(s) schemes are
+  // allowed so a javascript:/data: handle can never execute in the web app
+  // (defense in depth beyond rel=noopener). Same posture as an allowlist.
+  if (payoutHandle !== undefined && payoutHandle && !/^https?:\/\//.test(payoutHandle)) {
+    return res.status(400).json({ error: "payoutHandle must be an http(s) URL" });
+  }
   const artist = await prisma.artist.findUnique({ where: { id: req.params.id } });
   if (!artist) return res.status(404).json({ error: "artist not found" });
   if (artist.ownerId !== req.userId) return res.status(403).json({ error: "you do not own this artist profile" });
