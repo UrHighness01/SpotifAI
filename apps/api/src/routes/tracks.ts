@@ -370,4 +370,44 @@ router.patch("/:id/meta", requireAuth, async (req: AuthedRequest, res) => {
   res.json({ track: updated });
 });
 
+// Community attestation ring (John's Tier H #3): anyone who has the actual
+// audio can independently verify it against the track's recorded byteHash
+// and record their attestation ('I also have this file and it matches').
+// The platform stays humble ('we recorded it'); the community adds
+// credibility. Per-hash, verifiable, self-interested to check.
+router.post("/:id/attest", requireAuth, async (req: AuthedRequest, res) => {
+  const { byteHash, handle } = req.body || {};
+  if (typeof byteHash !== "string" || !/^[0-9a-f]{16}$/.test(byteHash)) {
+    return res.status(400).json({ error: "byteHash must be a 16-char hex string" });
+  }
+  if (typeof handle !== "string" || handle.length < 2 || handle.length > 60) {
+    return res.status(400).json({ error: "handle must be a string 2-60 chars" });
+  }
+
+  const track = await prisma.track.findUnique({ where: { id: req.params.id }, select: { id: true, fingerprintHash: true } });
+  if (!track) return res.status(404).json({ error: "track not found" });
+  if (!track.fingerprintHash) return res.status(400).json({ error: "track has no recorded fingerprint to attest to" });
+
+  // The attestation MUST match the recorded fingerprint — otherwise it's not
+  // an independent verification, it's noise.
+  if (byteHash !== track.fingerprintHash) {
+    return res.status(400).json({ error: "byteHash does not match the track's recorded fingerprint" });
+  }
+
+  const attestation = await prisma.attestation.upsert({
+    where: { userId_trackId: { userId: req.userId!, trackId: track.id } },
+    create: { userId: req.userId!, trackId: track.id, byteHash, handle },
+    update: { byteHash, handle },
+  });
+  res.status(201).json({ attestation });
+});
+
+router.get("/:id/attestations", async (req, res) => {
+  const attestations = await prisma.attestation.findMany({
+    where: { trackId: req.params.id },
+    orderBy: { createdAt: "asc" },
+  });
+  res.json({ attestations });
+});
+
 export default router;

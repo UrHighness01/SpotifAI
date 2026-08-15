@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePlayerStore } from "../store/player";
 import { AddToPlaylist } from "./AddToPlaylist";
 import { api } from "../api";
@@ -155,6 +155,11 @@ export function TrackRow({ track, index, queue, onMetaChange }: Props) {
                   </a>
                 </div>
               )}
+              {/* Community attestation ring (Tier H #3): anyone with the
+                  audio can independently verify it against the recorded
+                  fingerprint. The platform records; the community adds
+                  credibility. */}
+              <AttestSection track={track} />
               {/* Generation-notes annex (John idea #8): owner edits the
                   disclosure metadata in place. */}
               <button className="ai-edit-btn" onClick={() => setEditing(true)}>
@@ -189,5 +194,78 @@ export function TrackRow({ track, index, queue, onMetaChange }: Props) {
         </div>
       )}
     </>
+  );
+}
+
+// Community attestation ring (Tier H #3): show the attestation count and
+// let any logged-in user who independently verified the audio record it.
+interface Attestation {
+  id: string;
+  trackId: string;
+  byteHash: string;
+  handle: string;
+  createdAt: string;
+}
+
+function AttestSection({ track }: { track: ApiTrack }) {
+  const [attestations, setAttestations] = useState<Attestation[] | null>(null);
+  const [handle, setHandle] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    if (track.fingerprintHash) {
+      api.trackAttestations(track.id).then((d) => setAttestations(d.attestations)).catch(() => {});
+    }
+  }, [track.id, track.fingerprintHash]);
+
+  if (!track.fingerprintHash) return null;
+
+  const attest = async () => {
+    if (!track.fingerprintHash || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api.attestTrack(track.id, track.fingerprintHash, handle.trim() || "anonymous-listener");
+      setDone(true);
+      setAttestations((prev) => [{ id: "me", trackId: track.id, byteHash: track.fingerprintHash!, handle: handle.trim() || "anonymous-listener", createdAt: new Date().toISOString() }, ...(prev ?? [])]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "attest failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div style={{ marginTop: "0.3rem" }}>
+      <div className="ai-detail-label">
+        Independently verified by {attestations ? attestations.length : "…"} listener{attestations && attestations.length === 1 ? "" : "s"}
+      </div>
+      {!done && (
+        <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.3rem", flexWrap: "wrap" }}>
+          <input
+            value={handle}
+            onChange={(e) => setHandle(e.target.value)}
+            placeholder="your handle (optional)"
+            maxLength={60}
+            style={{
+              background: "var(--bg-card)",
+              border: "1px solid var(--border)",
+              borderRadius: 4,
+              color: "var(--text)",
+              padding: "0.3rem 0.5rem",
+              fontSize: "0.8rem",
+              maxWidth: 180,
+            }}
+          />
+          <button className="ai-edit-btn" onClick={attest} disabled={busy} title="I have this audio file and its hash matches the recorded fingerprint">
+            {busy ? "Verifying…" : "I verified this file ✓"}
+          </button>
+        </div>
+      )}
+      {done && <div style={{ fontSize: "0.8rem", color: "var(--accent)" }}>✓ Attested — thanks for helping verify provenance.</div>}
+      {error && <div style={{ fontSize: "0.78rem", color: "var(--flag, #a13a2e)" }}>{error}</div>}
+    </div>
   );
 }

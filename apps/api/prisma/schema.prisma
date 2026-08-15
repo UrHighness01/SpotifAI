@@ -23,6 +23,20 @@ model User {
   librarySaves              LibrarySave[]
   artists                   Artist[]
   follows                   Follow[]
+  attestations              Attestation[]
+}
+
+model Attestation {
+  id        String   @id @default(cuid())
+  userId    String
+  trackId   String
+  byteHash  String
+  handle    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  track     Track    @relation(fields: [trackId], references: [id])
+
+  @@unique([userId, trackId])
 }
 
 model Artist {
@@ -89,6 +103,7 @@ model Track {
   artist              Artist        @relation(fields: [artistId], references: [id])
   playlistTracks      PlaylistTrack[]
   librarySaves        LibrarySave[]
+  attestations        Attestation[]
 }
 
 model Playlist {

@@ -65,6 +65,9 @@ export const api = {
     request(`/tracks/${id}/meta`, { method: "PATCH", body: JSON.stringify(meta) }),
   relatedTracks: (id: string) => request(`/tracks/${id}/related`),
   recommendedTracks: () => request("/tracks/recommended"),
+  attestTrack: (id: string, byteHash: string, handle: string) =>
+    request(`/tracks/${id}/attest`, { method: "POST", body: JSON.stringify({ byteHash, handle }) }),
+  trackAttestations: (id: string) => request(`/tracks/${id}/attestations`),
 
   library: () => request("/library"),
   saveTrack: (trackId: string) => request(`/library/${trackId}`, { method: "POST" }),
