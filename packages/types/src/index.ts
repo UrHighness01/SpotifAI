@@ -29,6 +29,7 @@ export interface Track {
   audioPath: string;
   durationSec: number;
   aiDisclosure: AiDisclosure;
+  playCount: number;
   createdAt: string;
 }
 

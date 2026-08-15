@@ -18,6 +18,13 @@ router.get("/:trackId", async (req, res) => {
   const range = req.headers.range;
   const contentType = guessContentType(filePath);
 
+  // Only count a play once per audio element load, not per seek — a seek issues
+  // its own ranged request but always carries a Range header, so a fresh
+  // (rangeless) request is what a browser sends when it first loads the track.
+  if (!range) {
+    prisma.track.update({ where: { id: track.id }, data: { playCount: { increment: 1 } } }).catch(() => {});
+  }
+
   if (!range) {
     res.writeHead(200, {
       "Content-Length": fileSize,

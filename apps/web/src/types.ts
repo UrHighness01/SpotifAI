@@ -26,6 +26,7 @@ export interface ApiTrack {
   aiModel: string;
   aiPrompt: string | null;
   aiGenerationNotes: string | null;
+  playCount: number;
   createdAt: string;
   artist?: ApiArtist;
   album?: ApiAlbum | null;

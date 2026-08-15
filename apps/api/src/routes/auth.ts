@@ -87,18 +87,23 @@ router.post("/verify-email", async (req, res) => {
     return res.status(400).json({ error: "token is required" });
   }
   const hash = hashToken(token);
-  const user = await prisma.user.findUnique({ where: { emailVerificationTokenHash: hash } });
-  if (!user || !user.emailVerificationExpires || user.emailVerificationExpires < new Date()) {
-    return res.status(400).json({ error: "invalid or expired verification link" });
-  }
-  await prisma.user.update({
-    where: { id: user.id },
+  // Atomic conditional update instead of read-then-write: the where clause
+  // re-checks the hash and expiry at write time, so two concurrent requests
+  // with the same token can't both observe it as still-valid before either commits.
+  const { count } = await prisma.user.updateMany({
+    where: {
+      emailVerificationTokenHash: hash,
+      emailVerificationExpires: { gt: new Date() },
+    },
     data: {
       emailVerified: true,
       emailVerificationTokenHash: null,
       emailVerificationExpires: null,
     },
   });
+  if (count === 0) {
+    return res.status(400).json({ error: "invalid or expired verification link" });
+  }
   res.json({ message: "Email verified. You can now log in." });
 });
 
@@ -195,13 +200,14 @@ router.post("/reset-password", async (req, res) => {
     return res.status(400).json({ error: "password must be at least 8 characters" });
   }
   const hash = hashToken(token);
-  const user = await prisma.user.findUnique({ where: { passwordResetTokenHash: hash } });
-  if (!user || !user.passwordResetExpires || user.passwordResetExpires < new Date()) {
-    return res.status(400).json({ error: "invalid or expired reset link" });
-  }
   const passwordHash = await bcrypt.hash(password, 10);
-  await prisma.user.update({
-    where: { id: user.id },
+  // Atomic conditional update (see verify-email) so a concurrent second use of
+  // the same reset token can't slip through between the read and the write.
+  const { count } = await prisma.user.updateMany({
+    where: {
+      passwordResetTokenHash: hash,
+      passwordResetExpires: { gt: new Date() },
+    },
     data: {
       passwordHash,
       passwordResetTokenHash: null,
@@ -211,6 +217,9 @@ router.post("/reset-password", async (req, res) => {
       tokenVersion: { increment: 1 },
     },
   });
+  if (count === 0) {
+    return res.status(400).json({ error: "invalid or expired reset link" });
+  }
   res.json({ message: "Password reset. You can now log in with your new password." });
 });
 

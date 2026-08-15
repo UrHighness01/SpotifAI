@@ -1,4 +1,5 @@
 import "dotenv/config";
+import "express-async-errors";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -59,6 +60,15 @@ const mailLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Streaming is intentionally public (shared catalog), but files can be large,
+// so bound how hard one IP can hammer disk/bandwidth via repeated range requests.
+const streamLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
 app.use("/auth/forgot-password", mailLimiter);
@@ -68,9 +78,21 @@ app.use("/artists", writeLimiter, artistRoutes);
 app.use("/albums", writeLimiter, albumRoutes);
 app.use("/tracks", trackRoutes);
 app.use("/upload", uploadLimiter, uploadRoutes);
-app.use("/stream", streamRoutes);
+app.use("/stream", streamLimiter, streamRoutes);
 app.use("/library", writeLimiter, libraryRoutes);
 app.use("/playlists", writeLimiter, playlistRoutes);
+
+app.use((req, res) => {
+  res.status(404).json({ error: "not found" });
+});
+
+// Centralized error handler — express-async-errors forwards rejected promises
+// from async route handlers here instead of letting them hang the request.
+app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error(err);
+  if (res.headersSent) return;
+  res.status(500).json({ error: "internal server error" });
+});
 
 app.listen(PORT, () => {
   console.log(`SpotifAI API listening on http://localhost:${PORT}`);

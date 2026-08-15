@@ -7,14 +7,17 @@ router.get("/", async (req, res) => {
   const q = typeof req.query.q === "string" ? req.query.q : undefined;
   const artistId = typeof req.query.artistId === "string" ? req.query.artistId : undefined;
   const albumId = typeof req.query.albumId === "string" ? req.query.albumId : undefined;
+  const aiModel = typeof req.query.aiModel === "string" ? req.query.aiModel : undefined;
+  const sort = typeof req.query.sort === "string" ? req.query.sort : undefined;
   const tracks = await prisma.track.findMany({
     where: {
       ...(q ? { title: { contains: q } } : {}),
       ...(artistId ? { artistId } : {}),
       ...(albumId ? { albumId } : {}),
+      ...(aiModel ? { aiModel } : {}),
     },
     include: { artist: true, album: true },
-    orderBy: { createdAt: "desc" },
+    orderBy: sort === "trending" ? { playCount: "desc" } : { createdAt: "desc" },
   });
   res.json({ tracks });
 });

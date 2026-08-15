@@ -7,11 +7,13 @@ import { usePlayerStore } from "../store/player";
 export function Home() {
   const [artists, setArtists] = useState<ApiArtist[]>([]);
   const [tracks, setTracks] = useState<ApiTrack[]>([]);
+  const [trending, setTrending] = useState<ApiTrack[]>([]);
   const playTrack = usePlayerStore((s) => s.playTrack);
 
   useEffect(() => {
     api.artists().then((d) => setArtists(d.artists));
     api.tracks().then((d) => setTracks(d.tracks));
+    api.tracks({ sort: "trending" }).then((d) => setTrending(d.tracks.slice(0, 10)));
   }, []);
 
   return (
@@ -27,6 +29,23 @@ export function Home() {
         ))}
         {artists.length === 0 && <div className="card-sub">No artists yet — upload a track to create one.</div>}
       </div>
+
+      {trending.some((t) => t.playCount > 0) && (
+        <>
+          <h1 className="section-title">Trending</h1>
+          <div className="card-grid">
+            {trending
+              .filter((t) => t.playCount > 0)
+              .map((track) => (
+                <div key={track.id} className="card" onClick={() => playTrack(track, trending)}>
+                  <div className="card-art">▶</div>
+                  <div className="card-title">{track.title}</div>
+                  <div className="card-sub">{track.artist?.name}</div>
+                </div>
+              ))}
+          </div>
+        </>
+      )}
 
       <h1 className="section-title">Recent tracks</h1>
       <div className="card-grid">

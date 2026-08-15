@@ -57,6 +57,7 @@ model Track {
   aiModel             String
   aiPrompt            String?
   aiGenerationNotes    String?
+  playCount           Int           @default(0)
   createdAt           DateTime      @default(now())
   album               Album?        @relation(fields: [albumId], references: [id])
   artist              Artist        @relation(fields: [artistId], references: [id])
