@@ -4,6 +4,7 @@ import { api, mediaUrl } from "../api";
 import type { ApiArtist, ApiTrack } from "../types";
 import { usePlayerStore } from "../store/player";
 import { TrackRow } from "../components/TrackRow";
+import { clampText } from "../utils/text";
 
 const PlayIcon = () => (
   <svg viewBox="0 0 24 24" width="18" height="18" fill="#000" aria-hidden="true">
@@ -116,7 +117,10 @@ export function Home() {
         </>
       )}
 
-      {/* New drops from followed uploaders (John's Tier 2 #5). */}
+      {/* New drops from followed uploaders (John's Tier 2 #5) — with the
+          drop + its recipe paired visibly (Tier B #5): 'here's my prompt,
+          here's what it made', closing the loop between follows and the
+          recipe library. */}
       {followFeed.length > 0 && (
         <>
           <div className="section-head">
@@ -124,7 +128,16 @@ export function Home() {
           </div>
           <div>
             {followFeed.map((track, i) => (
-              <TrackRow key={track.id} track={track} index={i} queue={followFeed} />
+              <div key={track.id}>
+                <TrackRow track={track} index={i} queue={followFeed} />
+                {track.aiPrompt && (
+                  <div className="recipe-card" style={{ marginBottom: "0.5rem", marginLeft: "3rem" }}>
+                    <div className="recipe-row">
+                      <span className="ai-detail-label">Made from</span> “{clampText(track.aiPrompt, 120)}”
+                    </div>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </>
