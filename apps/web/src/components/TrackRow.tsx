@@ -2,6 +2,7 @@ import { useState } from "react";
 import { usePlayerStore } from "../store/player";
 import { AddToPlaylist } from "./AddToPlaylist";
 import { api } from "../api";
+import { clampText } from "../utils/text";
 import type { ApiTrack } from "../types";
 
 interface Props {
@@ -74,13 +75,13 @@ export function TrackRow({ track, index, queue, onMetaChange }: Props) {
           {!editing ? (
             <>
               {track.aiPrompt && (
-                <div>
-                  <span className="ai-detail-label">Prompt:</span> {track.aiPrompt}
+                <div title={track.aiPrompt}>
+                  <span className="ai-detail-label">Prompt:</span> {clampText(track.aiPrompt)}
                 </div>
               )}
               {track.aiGenerationNotes && (
-                <div>
-                  <span className="ai-detail-label">Notes:</span> {track.aiGenerationNotes}
+                <div title={track.aiGenerationNotes}>
+                  <span className="ai-detail-label">Notes:</span> {clampText(track.aiGenerationNotes, 300)}
                 </div>
               )}
               {/* Rights/consent notice (John's next-ideas #8): an explicit

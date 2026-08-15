@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api, mediaUrl } from "../api";
 import { TrackRow } from "../components/TrackRow";
+import { clampText } from "../utils/text";
 import type { ApiArtist, ApiTrack, ApiAlbum } from "../types";
 
 export function Artist() {
@@ -73,13 +74,13 @@ export function Artist() {
                   <span className="ai-detail-label">Model</span> {track.aiModel}
                 </div>
                 {track.aiPrompt && (
-                  <div className="recipe-row">
-                    <span className="ai-detail-label">Prompt</span> {track.aiPrompt}
+                  <div className="recipe-row" title={track.aiPrompt}>
+                    <span className="ai-detail-label">Prompt</span> {clampText(track.aiPrompt)}
                   </div>
                 )}
                 {track.aiGenerationNotes && (
-                  <div className="recipe-row">
-                    <span className="ai-detail-label">Notes</span> {track.aiGenerationNotes}
+                  <div className="recipe-row" title={track.aiGenerationNotes}>
+                    <span className="ai-detail-label">Notes</span> {clampText(track.aiGenerationNotes, 300)}
                   </div>
                 )}
               </div>

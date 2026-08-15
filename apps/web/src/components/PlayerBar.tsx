@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../store/player";
 import { api, mediaUrl } from "../api";
+import { clampText } from "../utils/text";
 
 function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds)) return "0:00";
@@ -126,7 +127,7 @@ export function PlayerBar() {
               listening experience, live in the player. */}
           {track.aiPrompt && (
             <div className="prompt-echo" title={track.aiPrompt}>
-              <span className="prompt-echo-label">{track.aiModel}:</span> “{track.aiPrompt}”
+              <span className="prompt-echo-label">{track.aiModel}:</span> “{clampText(track.aiPrompt, 120)}”
             </div>
           )}
           {/* Nano on-device blurb (John's next-ideas #5): the generated
