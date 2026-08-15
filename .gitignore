@@ -6,6 +6,7 @@ apps/desktop/dist/
 .electron-builder-cache/
 .env
 .env.*
+!.env.example
 storage/audio/*
 storage/covers/*
 !storage/audio/.gitkeep
