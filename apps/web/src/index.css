@@ -482,6 +482,24 @@ img.card-art {
 .player-now-playing .meta .title { font-size: 0.85rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .player-now-playing .meta .artist { font-size: 0.75rem; color: var(--text-dim); }
 
+/* Prompt-echo (John's next-ideas #1): the generation prompt shown live in
+ * the player — honesty as the product's signature gesture. */
+.prompt-echo {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 300px;
+  font-style: italic;
+  opacity: 0.85;
+}
+.prompt-echo-label {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--accent);
+}
+
 .player-center {
   display: flex;
   flex-direction: column;

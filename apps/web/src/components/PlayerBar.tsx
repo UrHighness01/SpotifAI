@@ -75,6 +75,14 @@ export function PlayerBar() {
         <div className="meta">
           <div className="title">{track.title}</div>
           <div className="artist">{track.artist?.name}</div>
+          {/* Prompt-echo (John's next-ideas #1): the platform's pitch is
+              honesty — make the actual generation prompt the hero of the
+              listening experience, live in the player. */}
+          {track.aiPrompt && (
+            <div className="prompt-echo" title={track.aiPrompt}>
+              <span className="prompt-echo-label">{track.aiModel}:</span> “{track.aiPrompt}”
+            </div>
+          )}
         </div>
       </div>
 
