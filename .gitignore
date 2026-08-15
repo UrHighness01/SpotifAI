@@ -38,6 +38,8 @@ apps/prisma/corpus/*.jsonl
 !apps/prisma/corpus/snapshots/*.jsonl
 !apps/prisma/corpus/snapshots/README.txt
 apps/api/prisma/dev.db-journal
+# local loop-graph scratch docs — kept in the folder, never committed
 build-loop.html
+build-loop-nano.html
 .claude/
 *.tsbuildinfo
