@@ -51,7 +51,10 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   const album = await prisma.album.findUnique({
     where: { id: req.params.id },
-    include: { artist: true, tracks: { include: { album: true } } },
+    include: {
+      artist: true,
+      tracks: { include: { album: true, artist: true, remixes: { include: { artist: true } } } },
+    },
   });
   if (!album) return res.status(404).json({ error: "album not found" });
   res.json({ album });

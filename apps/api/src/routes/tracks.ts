@@ -5,7 +5,12 @@ import { requireAuth, AuthedRequest } from "../middleware/auth";
 
 const router = Router();
 
-const TRACK_INCLUDE = { artist: true, album: true, remixOf: { include: { artist: true } } } as const;
+const TRACK_INCLUDE = {
+  artist: true,
+  album: true,
+  remixOf: { include: { artist: true } },
+  remixes: { include: { artist: true } },
+} as const;
 
 /**
  * Co-occurrence scoring for recommendations (John-approved v1, slice 19):

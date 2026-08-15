@@ -81,16 +81,28 @@ export function Album() {
         <input type="file" accept="image/png,image/jpeg,image/webp" onChange={onCoverChange} hidden />
       </label>
       {coverError && <p style={{ color: "var(--flag, #a13a2e)", fontSize: "0.85rem" }}>{coverError}</p>}
-      {nanoAvailable && (
-        <p className="track-blurb" style={{ color: "var(--text-dim)", maxWidth: "62ch", fontStyle: "italic" }}>
-          {blurb ? blurb : "Generating an on-device description…"}
-        </p>
-      )}
       <div style={{ marginTop: "1.5rem" }}>
         {album.tracks.map((track, i) => (
           <TrackRow key={track.id} track={{ ...track, artist: album.artist }} index={i} queue={album.tracks.map((t) => ({ ...t, artist: album.artist }))} />
         ))}
       </div>
+      {/* Remix reverse index (John's Tier 2 #4): tracks that remix this
+          album's tracks — turns remixOfId into a browseable lineage. */}
+      {album.tracks.some((t) => t.remixes?.length) && (
+        <div style={{ marginTop: "2.5rem" }}>
+          <div className="section-head">
+            <h2 className="section-title">Remixed from this album</h2>
+          </div>
+          {album.tracks.flatMap((t) => (t.remixes ?? []).map((r) => ({ source: t, remix: r }))).map(({ source, remix }, i) => (
+            <div key={remix.id} className="recipe-card" style={{ marginBottom: "0.5rem" }}>
+              <div className="recipe-title">{remix.title}</div>
+              <div className="recipe-row">
+                {remix.artist?.name} · remix of “{source.title}”
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       {related.length > 0 && (
         <div style={{ marginTop: "2.5rem" }}>
           <div className="section-head">
