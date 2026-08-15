@@ -75,7 +75,12 @@ for (const s of samples) {
     perceptualHash: perceptualFingerprint(audio),
     byteHash: sha256Hex(audio),
     generator: s.generator,
-    sampleFile: abs,
+    // John's ticket on slices 53.5-55: store a RELATIVE basename + the
+    // byteHash as the stable id — never the absolute path, so the corpus
+    // (the future trust anchor) stays leak-free of the collector's machine
+    // layout. The hash is the id; the basename is just human context.
+    sample: path.basename(abs),
+    sampleId: sha256Hex(audio),
     collectedAt: now,
   };
   out.write(JSON.stringify(record) + "\n");
