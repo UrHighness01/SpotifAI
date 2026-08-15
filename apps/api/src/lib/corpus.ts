@@ -21,8 +21,31 @@ export function isKnownGenerator(model: string | null | undefined): boolean {
   return Boolean(model && KNOWN_GENERATORS.includes(model.toLowerCase()));
 }
 
+// John's ticket (a): the dedup must NOT sync-read the whole corpus file per
+// upload — that's O(corpus) per upload and the growth ceiling. Load the
+// existing sampleIds ONCE at module load into a Set (one read per process
+// start), check in-memory per upload, and append to the Set on write. The
+// Set only grows; a process restart re-reads the file once. (Concurrent
+// duplicate races are harmless for a corpus — best-effort dedup.)
+const knownSampleIds = new Set<string>();
+try {
+  if (fs.existsSync(CORPUS_FILE)) {
+    for (const line of fs.readFileSync(CORPUS_FILE, "utf8").split("\n").filter(Boolean)) {
+      try {
+        const sampleId = JSON.parse(line).sampleId;
+        if (typeof sampleId === "string") knownSampleIds.add(sampleId);
+      } catch {
+        /* skip malformed */
+      }
+    }
+  }
+} catch {
+  /* corpus unavailable — dedup starts empty */
+}
+
 // Appends a declared-upload signature record (content-addressed, deduped by
-// byteHash = sampleId). Fire-and-forget: never throws into the request path.
+// byteHash = sampleId via the in-memory Set). Fire-and-forget: never throws
+// into the request path.
 export function recordDeclaredSignature(entry: {
   perceptualHash?: string | null;
   byteHash?: string | null;
@@ -31,19 +54,10 @@ export function recordDeclaredSignature(entry: {
 }): void {
   try {
     if (!entry.byteHash || !entry.perceptualHash || !isKnownGenerator(entry.generator)) return;
+    if (knownSampleIds.has(entry.byteHash)) return; // O(1) check
+
     const CORPUS_DIR = path.dirname(CORPUS_FILE);
     fs.mkdirSync(CORPUS_DIR, { recursive: true });
-
-    // Skip if already present (content-addressed).
-    if (fs.existsSync(CORPUS_FILE)) {
-      for (const line of fs.readFileSync(CORPUS_FILE, "utf8").split("\n").filter(Boolean)) {
-        try {
-          if (JSON.parse(line).sampleId === entry.byteHash) return;
-        } catch {
-          /* skip malformed */
-        }
-      }
-    }
 
     const record = {
       perceptualHash: entry.perceptualHash,
@@ -55,7 +69,9 @@ export function recordDeclaredSignature(entry: {
       source: "declared-upload",
     };
     fs.appendFileSync(CORPUS_FILE, JSON.stringify(record) + "\n");
+    knownSampleIds.add(entry.byteHash);
   } catch {
     // Never let corpus bookkeeping break an upload.
   }
 }
+

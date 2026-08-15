@@ -19,6 +19,17 @@ router.post("/track/:trackId/request", requireAuth, async (req: AuthedRequest, r
     return res.status(400).json({ error: "you cannot request to remix your own track" });
   }
 
+  // John's ticket (b): 'rejected' is terminal — a rejected request stays
+  // rejected (the owner said no; re-POSTing must not silently re-open it).
+  // Only 'pending' or 'accepted' requests can be updated/re-sent. This
+  // keeps accept/reject a real decision, not a whack-a-mole loop.
+  const existing = await prisma.collabRequest.findUnique({
+    where: { requesterId_trackId: { requesterId: req.userId!, trackId: track.id } },
+  });
+  if (existing?.status === "rejected") {
+    return res.status(409).json({ error: "this request was rejected and is final" });
+  }
+
   const request = await prisma.collabRequest.upsert({
     where: { requesterId_trackId: { requesterId: req.userId!, trackId: track.id } },
     create: { requesterId: req.userId!, trackId: track.id, message: message || null },
