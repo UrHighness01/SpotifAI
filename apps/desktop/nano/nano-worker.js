@@ -31,8 +31,8 @@ function ensureEngine() {
   engine = spawn(ENGINE, [MODEL, VOCAB, String(GEN_TOKENS)], {
     stdio: ["pipe", "pipe", "inherit"],
   });
-  engine.on("exit", (code) => {
-    console.error(`[nano] engine exited (${code}) — will respawn on next request`);
+  engine.on("error", (err) => {
+    console.error(`[nano] engine spawn error: ${err.message}`);
     engine = null;
   });
 }
@@ -54,28 +54,60 @@ function request(prompt) {
   });
 }
 
+// Each request gets its own engine run (spawn, write prompt, read output,
+// exit). Simple and race-free; the engine is a few-hundred-KB binary that
+// starts in milliseconds, and blurb generation is not hot-path.
 function pump() {
   if (busy || queue.length === 0) return;
   busy = true;
-  ensureEngine();
   const { prompt, resolve, reject } = queue.shift();
 
+  let child;
+  try {
+    child = spawn(ENGINE, [MODEL, VOCAB, String(GEN_TOKENS)], {
+      stdio: ["pipe", "pipe", "inherit"],
+    });
+  } catch (err) {
+    busy = false;
+    reject(new Error(`engine spawn failed: ${err.message}`));
+    pump();
+    return;
+  }
+
   let out = "";
-  const onData = (chunk) => {
+  let settled = false;
+  const timer = setTimeout(() => {
+    if (settled) return;
+    settled = true;
+    child.kill();
+    busy = false;
+    reject(new Error("engine timed out"));
+    pump();
+  }, 15000);
+
+  child.stdout.on("data", (chunk) => {
     out += chunk.toString();
-  };
-  const onClose = () => {
-    engine.stdout.removeListener("data", onData);
-    engine.removeListener("close", onClose);
+  });
+  child.on("error", (err) => {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timer);
+    busy = false;
+    reject(new Error(`engine spawn error: ${err.message}`));
+    pump();
+  });
+  child.on("close", (code) => {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timer);
     busy = false;
     if (out.trim()) resolve(out.trim());
-    else reject(new Error("engine produced no output"));
+    else reject(new Error(`engine exited (${code}) with no output`));
     pump();
-  };
+  });
 
-  engine.stdout.on("data", onData);
-  engine.on("close", onClose);
-  engine.stdin.write(prompt + "\n");
+  child.stdin.write(prompt + "\n");
+  child.stdin.end();
 }
 
 process.on("message", async (msg) => {
@@ -87,7 +119,6 @@ process.on("message", async (msg) => {
       process.send({ type: "error", id: msg.id, error: err.message });
     }
   } else if (msg && msg.type === "shutdown") {
-    if (engine) engine.kill();
     process.exit(0);
   }
 });
