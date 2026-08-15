@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { api } from "../api";
+import { api, mediaUrl } from "../api";
 import { TrackRow } from "../components/TrackRow";
 import type { ApiArtist, ApiTrack } from "../types";
 
@@ -42,7 +42,11 @@ export function Search() {
           <div className="card-grid">
             {artists.map((artist) => (
               <Link key={artist.id} className="card" to={`/artist/${artist.id}`}>
-                <div className="card-art">🤖</div>
+                {artist.avatarPath ? (
+                  <img className="card-art artist-art" src={mediaUrl(artist.avatarPath)!} alt={artist.name} />
+                ) : (
+                  <div className="card-art artist-art">🤖</div>
+                )}
                 <div className="card-title">{artist.name}</div>
                 <div className="card-sub">{artist.aiModel}</div>
               </Link>

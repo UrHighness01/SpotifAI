@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { api } from "../api";
+import { api, mediaUrl } from "../api";
 import { TrackRow } from "../components/TrackRow";
 import type { ApiArtist, ApiTrack, ApiAlbum } from "../types";
 
@@ -27,7 +27,11 @@ export function Artist() {
           <div className="card-grid">
             {artist.albums.map((album) => (
               <Link key={album.id} className="card" to={`/album/${album.id}`}>
-                <div className="card-art">💿</div>
+                {album.coverPath ? (
+                  <img className="card-art" src={mediaUrl(album.coverPath)!} alt={album.title} />
+                ) : (
+                  <div className="card-art">💿</div>
+                )}
                 <div className="card-title">{album.title}</div>
               </Link>
             ))}

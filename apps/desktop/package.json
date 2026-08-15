@@ -15,6 +15,9 @@
     "appId": "com.spotifai.desktop",
     "productName": "SpotifAI",
     "files": ["src/**/*"],
-    "directories": { "output": "dist" }
+    "directories": { "output": "dist" },
+    "mac": { "icon": "build/icon.png" },
+    "win": { "icon": "build/icon.ico" },
+    "linux": { "icon": "build/icon.png" }
   }
 }

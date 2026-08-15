@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../store/player";
-import { api } from "../api";
+import { api, mediaUrl } from "../api";
 
 function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds)) return "0:00";
@@ -67,7 +67,11 @@ export function PlayerBar() {
         }}
       />
       <div className="player-now-playing">
-        <div className="art" />
+        {track.album?.coverPath ? (
+          <img className="art" src={mediaUrl(track.album.coverPath)!} alt={track.title} />
+        ) : (
+          <div className="art" />
+        )}
         <div className="meta">
           <div className="title">{track.title}</div>
           <div className="artist">{track.artist?.name}</div>

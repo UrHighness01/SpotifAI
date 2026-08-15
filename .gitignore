@@ -9,8 +9,13 @@ apps/desktop/dist/
 !.env.example
 storage/audio/*
 storage/covers/*
+storage/avatars/*
 !storage/audio/.gitkeep
 !storage/covers/.gitkeep
+!storage/avatars/.gitkeep
+
+# personal local test files — never commit real audio
+*.mp3
 *.log
 .DS_Store
 apps/api/prisma/dev.db

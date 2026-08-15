@@ -29,21 +29,23 @@ function Topbar() {
 
   return (
     <div className="topbar">
-      <Link to="/" style={{ fontWeight: 800, fontSize: "1.1rem", color: "var(--accent)" }}>
+      <Link to="/" className="brand">
         SpotifAI
       </Link>
       <div className="topbar-right">
         {user ? (
           <>
-            <span>{user.displayName}</span>
-            <button onClick={onLogout} style={{ background: "none", border: "none", color: "var(--text-dim)", cursor: "pointer" }}>
+            <span className="topbar-username">{user.displayName}</span>
+            <button onClick={onLogout} className="topbar-logout">
               Log out
             </button>
           </>
         ) : (
           <>
-            <Link to="/login">Log in</Link>
-            <Link to="/register" style={{ color: "var(--text)" }}>
+            <Link to="/login" className="topbar-login">
+              Log in
+            </Link>
+            <Link to="/register" className="topbar-signup">
               Sign up
             </Link>
           </>

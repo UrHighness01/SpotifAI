@@ -5,6 +5,7 @@ import fs from "fs";
 import { randomUUID } from "crypto";
 import { prisma } from "../db";
 import { requireAuth, AuthedRequest } from "../middleware/auth";
+import { writeCover } from "../lib/cover-art";
 
 const router = Router();
 
@@ -49,6 +50,7 @@ const upload = multer({
   storage,
   limits: {
     fileSize: 200 * 1024 * 1024,
+    fieldSize: 32 * 1024,
   },
   fileFilter: (req, file, cb) => {
     const allowed = file.fieldname === "cover" ? COVER_EXT_BY_MIME : AUDIO_EXT_BY_MIME;
@@ -106,11 +108,18 @@ router.post(
       }
     }
 
+    // Tracks have no cover of their own (only Album does), so a track
+    // uploaded without an albumId gets a single-track album created for it
+    // — otherwise it would have no way to ever show cover art in the UI.
+    if (!album) {
+      album = await prisma.album.create({ data: { title, artistId } });
+    }
+
     const track = await prisma.track.create({
       data: {
         title,
         artistId,
-        albumId: albumId || undefined,
+        albumId: album.id,
         audioPath: path.relative(STORAGE_ROOT, audioFile.path),
         durationSec: durationSec ? Number(durationSec) : 0,
         aiModel,
@@ -120,16 +129,15 @@ router.post(
     });
 
     if (coverFile) {
-      if (album) {
-        await prisma.album.update({
-          where: { id: album.id },
-          data: { coverPath: path.relative(STORAGE_ROOT, coverFile.path) },
-        });
-      } else {
-        // No album to attach the cover to (or the album check above already
-        // rejected the request) — don't leave the file orphaned on disk.
-        unlinkQuiet(coverFile.path);
-      }
+      await prisma.album.update({
+        where: { id: album.id },
+        data: { coverPath: path.relative(STORAGE_ROOT, coverFile.path) },
+      });
+    } else if (!album.coverPath) {
+      // No cover was uploaded and the album didn't already have one —
+      // generate a placeholder so the album is never blank in the UI.
+      const coverPath = `covers/${writeCover(COVER_DIR, album.id)}`;
+      await prisma.album.update({ where: { id: album.id }, data: { coverPath } });
     }
 
     res.status(201).json({ track });

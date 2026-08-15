@@ -1,5 +1,9 @@
 const API_BASE = "http://localhost:4000";
 
+export function mediaUrl(relPath: string | null | undefined): string | null {
+  return relPath ? `${API_BASE}/media/${relPath}` : null;
+}
+
 async function request(path: string, options: RequestInit = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
@@ -47,6 +51,8 @@ export const api = {
     return request(`/tracks${qs ? `?${qs}` : ""}`);
   },
   track: (id: string) => request(`/tracks/${id}`),
+  relatedTracks: (id: string) => request(`/tracks/${id}/related`),
+  recommendedTracks: () => request("/tracks/recommended"),
 
   library: () => request("/library"),
   saveTrack: (trackId: string) => request(`/library/${trackId}`, { method: "POST" }),

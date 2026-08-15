@@ -2,11 +2,14 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import fs from "fs";
 import path from "path";
+import { writeCover } from "../src/lib/cover-art";
 
 const prisma = new PrismaClient();
 
 const STORAGE_ROOT = path.resolve(__dirname, "../../../storage");
 const AUDIO_DIR = path.join(STORAGE_ROOT, "audio");
+const COVER_DIR = path.join(STORAGE_ROOT, "covers");
+const AVATAR_DIR = path.join(STORAGE_ROOT, "avatars");
 
 // Minimal valid silent WAV (44-byte header, 1 second of silence, 8kHz mono 8-bit)
 function makeSilentWav(): Buffer {
@@ -33,6 +36,8 @@ function makeSilentWav(): Buffer {
 
 async function main() {
   fs.mkdirSync(AUDIO_DIR, { recursive: true });
+  fs.mkdirSync(COVER_DIR, { recursive: true });
+  fs.mkdirSync(AVATAR_DIR, { recursive: true });
 
   const seedPasswordHash = await bcrypt.hash("seed-owner-password-change-me", 10);
   const seedOwner = await prisma.user.upsert({
@@ -47,14 +52,31 @@ async function main() {
   });
 
   const artist1 = await prisma.artist.create({
-    data: { name: "Null Horizon", bio: "A fully AI-generated ambient project.", aiModel: "Suno v4", ownerId: seedOwner.id },
+    data: {
+      name: "Null Horizon",
+      bio: "A fully AI-generated ambient project.",
+      aiModel: "Suno v4",
+      ownerId: seedOwner.id,
+      avatarPath: `avatars/${writeCover(AVATAR_DIR, "Null Horizon")}`,
+    },
   });
   const artist2 = await prisma.artist.create({
-    data: { name: "Static Bloom", bio: "AI-generated synthpop.", aiModel: "Udio", ownerId: seedOwner.id },
+    data: {
+      name: "Static Bloom",
+      bio: "AI-generated synthpop.",
+      aiModel: "Udio",
+      ownerId: seedOwner.id,
+      avatarPath: `avatars/${writeCover(AVATAR_DIR, "Static Bloom")}`,
+    },
   });
 
   const album1 = await prisma.album.create({
-    data: { title: "Signal Drift", artistId: artist1.id, releaseDate: new Date("2026-06-01") },
+    data: {
+      title: "Signal Drift",
+      artistId: artist1.id,
+      releaseDate: new Date("2026-06-01"),
+      coverPath: `covers/${writeCover(COVER_DIR, "Signal Drift")}`,
+    },
   });
 
   const seedTracks = [
@@ -66,11 +88,27 @@ async function main() {
   for (const t of seedTracks) {
     const wavPath = path.join(AUDIO_DIR, `${t.title.replace(/\s+/g, "_").toLowerCase()}.wav`);
     fs.writeFileSync(wavPath, makeSilentWav());
+
+    // Every track needs its own cover for the UI — reuse the shared album's
+    // art when the track belongs to one, otherwise mint a single's cover
+    // named after the track itself.
+    let albumId = t.album?.id;
+    if (!t.album) {
+      const single = await prisma.album.create({
+        data: {
+          title: t.title,
+          artistId: t.artist.id,
+          coverPath: `covers/${writeCover(COVER_DIR, t.title)}`,
+        },
+      });
+      albumId = single.id;
+    }
+
     await prisma.track.create({
       data: {
         title: t.title,
         artistId: t.artist.id,
-        albumId: t.album?.id,
+        albumId,
         audioPath: `audio/${path.basename(wavPath)}`,
         durationSec: 1,
         aiModel: t.artist.aiModel,

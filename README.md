@@ -85,6 +85,8 @@ npm run build -w apps/desktop
 | `GET/POST /artists`, `GET /artists/:id` | Artist catalog; writes require authentication |
 | `GET/POST /albums`, `GET /albums/:id` | Album catalog; writes require authentication |
 | `GET /tracks/:id` | Track lookup |
+| `GET /tracks/:id/related` | Co-occurrence recommendations — tracks that appear alongside this one in users' libraries/playlists, ranked by merged weight (library ×2, playlist ×1); cold-start fallback (same artist → same `aiModel` → trending) |
+| `GET /tracks/recommended` | Personalized recommendations for the current user (taste-based co-occurrence off their library/playlists); anonymous callers get a trending fallback |
 | `POST /upload/track` | Uploads an audio file (and optional cover) and creates the track record; requires authentication |
 | `GET /stream/:trackId` | Streams a track with HTTP Range support for seeking |
 | `GET/POST/DELETE /library` | Save, list, and remove tracks from the current user's library |
@@ -92,7 +94,8 @@ npm run build -w apps/desktop
 ## Security notes
 
 - Passwords are hashed with bcrypt; sessions use a JWT stored in an httpOnly cookie.
-- Uploads are validated by mimetype (audio and image allowlists) and capped in size; filenames are server-generated, not taken from client input.
+- Uploads are validated by mimetype (audio and image allowlists) and capped in size (`fileSize` 200 MB, `fieldSize` 32 KB); filenames are server-generated, not taken from client input.
+- Cover/avatar art is served publicly from `/media/covers` and `/media/avatars` (a shared catalog — covers aren't secret); audio stays behind the rate-limited, play-counting `/stream` route.
 - `helmet` is applied for standard security headers, and `/auth` routes are rate-limited.
 - `JWT_SECRET` must be overridden from its development default before running with `NODE_ENV=production`; the API refuses to start otherwise.
 - `CORS_ORIGIN` and the session cookie's `secure` flag are configurable per environment; the cookie is only marked `secure` in production.
