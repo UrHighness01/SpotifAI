@@ -17,8 +17,21 @@ const KNOWN_GENERATORS = ["suno v3.5", "suno v4", "udio"];
 
 const CORPUS_FILE = path.resolve(__dirname, "../../../prisma/corpus/signatures.jsonl");
 
+// Normalize generator names so declared uploads ('suno v4') and curated
+// samples ('suno-v4') land in the same bucket — otherwise the density
+// counts split across spellings and the gate never converges.
+export function normalizeGenerator(gen: string | null | undefined): string | null {
+  if (!gen) return null;
+  const g = gen.toLowerCase().replace(/[-_\s]+/g, " ").trim();
+  if (g.startsWith("suno v3")) return "suno v3.5";
+  if (g.startsWith("suno v4") || g.startsWith("suno-v4")) return "suno v4";
+  if (g.startsWith("udio")) return "udio";
+  return g;
+}
+
 export function isKnownGenerator(model: string | null | undefined): boolean {
-  return Boolean(model && KNOWN_GENERATORS.includes(model.toLowerCase()));
+  const g = normalizeGenerator(model);
+  return Boolean(g && KNOWN_GENERATORS.includes(g));
 }
 
 // John's ticket (a): the dedup must NOT sync-read the whole corpus file per
@@ -62,7 +75,7 @@ export function recordDeclaredSignature(entry: {
     const record = {
       perceptualHash: entry.perceptualHash,
       byteHash: entry.byteHash,
-      generator: (entry.generator ?? "unknown").toLowerCase(),
+      generator: normalizeGenerator(entry.generator) ?? (entry.generator ?? "unknown").toLowerCase(),
       sample: entry.trackId ? `track-${entry.trackId}` : "declared",
       sampleId: entry.byteHash,
       collectedAt: new Date().toISOString(),
