@@ -8,6 +8,7 @@ import { requireAuth, AuthedRequest } from "../middleware/auth";
 import { writeCover } from "../lib/cover-art";
 import { fingerprintAudio } from "../lib/fingerprint";
 import { recordDeclaredSignature } from "../lib/corpus";
+import { evaluateProvenance } from "../lib/signatures";
 
 const router = Router();
 
@@ -146,7 +147,13 @@ router.post(
         // (not undefined) when capture failed — otherwise Prisma falls back
         // to the column default @default("recorded") and mislabels a
         // failed-capture track as 'recorded' with a null hash.
-        provenanceStatus: fingerprint ? "recorded" : null,
+        // Live evaluation (slice 72): when the fingerprint is captured,
+        // evaluateProvenance immediately assigns the honest ladder label —
+        // 'signature-matched' (discriminative), 'signature-uncertain'
+        // (overlap), or 'recorded' (no signature evidence) — so new
+        // declared-generator tracks acquire the claim automatically,
+        // consistent with the validated corpus, not via one-time migration.
+        provenanceStatus: fingerprint ? evaluateProvenance(aiModel, fingerprint.perceptual) : null,
       },
     });
 
