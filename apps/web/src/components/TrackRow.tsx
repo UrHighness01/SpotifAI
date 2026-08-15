@@ -119,6 +119,22 @@ export function TrackRow({ track, index, queue, onMetaChange }: Props) {
                   </span>
                 </div>
               )}
+              {/* Support the artist (Tier A #2): one click from the
+                  disclosure panel deep-links to the uploader's payout —
+                  direct patronage, no platform fee. */}
+              {track.artist?.payoutHandle && track.artist?.payoutKind && (
+                <div>
+                  <a
+                    href={track.artist.payoutHandle}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="support-link"
+                    style={{ fontSize: "0.8rem" }}
+                  >
+                    Support {track.artist.name} via {track.artist.payoutKind} →
+                  </a>
+                </div>
+              )}
               {/* Generation-notes annex (John idea #8): owner edits the
                   disclosure metadata in place. */}
               <button className="ai-edit-btn" onClick={() => setEditing(true)}>
