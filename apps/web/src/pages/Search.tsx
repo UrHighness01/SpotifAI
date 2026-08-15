@@ -8,6 +8,12 @@ import type { ApiArtist, ApiTrack } from "../types";
 // Spotify-esque browsing dimension that fits the AI-music-only model. The
 // API already supports ?aiModel= on /tracks and (now) /artists.
 const AI_MODEL_FACETS = ["Suno v4", "Udio", "Suno v3.5"];
+// Tracks uploaded without a disclosed model have aiModel="unknown" — they
+// used to vanish from search entirely once any facet was active (typing in
+// the box kept the facet, and "unknown" wasn't in the facet list). Now the
+// box clears the facet, and this chip keeps undisclosed-model tracks
+// browsable.
+const UNKNOWN_FACET = "unknown";
 
 export function Search() {
   const [q, setQ] = useState("");
@@ -33,13 +39,20 @@ export function Search() {
     run(q, next);
   };
 
+  const typeQuery = (value: string) => {
+    // Typing a fresh query searches EVERYTHING — clear any active facet so
+    // tracks with an undisclosed/unknown model don't silently vanish (the
+    // Error 500 report: q=Error 500 + aiModel=Suno v4 returned 0).
+    run(value, null);
+  };
+
   return (
     <div>
       <input
         className="search-input"
         placeholder="What do you want to listen to?"
         value={q}
-        onChange={(e) => run(e.target.value, aiModel)}
+        onChange={(e) => typeQuery(e.target.value)}
         autoFocus
       />
 
@@ -54,6 +67,12 @@ export function Search() {
             {model}
           </button>
         ))}
+        <button
+          className={`facet-chip${aiModel === UNKNOWN_FACET ? " active" : ""}`}
+          onClick={() => facet(UNKNOWN_FACET)}
+        >
+          Not disclosed
+        </button>
         <span className="facet-label" style={{ marginLeft: "0.5rem" }}>
           <Link to="/made-with/Suno v4" style={{ color: "var(--text-dim)", fontSize: "0.75rem" }}>
             Browse all →

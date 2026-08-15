@@ -92,8 +92,8 @@ router.post(
     if (!audioFile) return cleanupAndReject(400, "audio file is required");
 
     const { title, artistId, albumId, durationSec, aiModel, aiPrompt, aiGenerationNotes, rightsNotice, licensePriceUsd, licenseTerms } = req.body || {};
-    if (!title || !artistId || !aiModel) {
-      return cleanupAndReject(400, "title, artistId, and aiModel are required");
+    if (!title || !artistId) {
+      return cleanupAndReject(400, "title and artistId are required");
     }
 
     const artist = await prisma.artist.findUnique({ where: { id: artistId } });
@@ -120,7 +120,11 @@ router.post(
 
     // Provenance fingerprint (John's next-ideas #6): recorded immutably at
     // upload so the audio+metadata can never be silently swapped later.
-    const fingerprint = fingerprintAudio(audioFile.path, { aiModel, title });
+    // aiModel is optional (user's ask) — 'unknown' when not disclosed. The
+    // fingerprint + signature evaluation handle 'unknown' gracefully
+    // (evaluateProvenance returns 'recorded' for unknown generators).
+    const model = (aiModel as string | undefined)?.trim() || "unknown";
+    const fingerprint = fingerprintAudio(audioFile.path, { aiModel: model, title });
 
     const track = await prisma.track.create({
       data: {
@@ -129,7 +133,7 @@ router.post(
         albumId: album.id,
         audioPath: path.relative(STORAGE_ROOT, audioFile.path),
         durationSec: durationSec ? Number(durationSec) : 0,
-        aiModel,
+        aiModel: model,
         aiPrompt: aiPrompt || undefined,
         aiGenerationNotes: aiGenerationNotes || undefined,
         rightsNotice: rightsNotice || "all-rights-reserved",
@@ -153,7 +157,7 @@ router.post(
         // (overlap), or 'recorded' (no signature evidence) — so new
         // declared-generator tracks acquire the claim automatically,
         // consistent with the validated corpus, not via one-time migration.
-        provenanceStatus: fingerprint ? evaluateProvenance(aiModel, fingerprint.perceptual) : null,
+        provenanceStatus: fingerprint ? evaluateProvenance(model, fingerprint.perceptual) : null,
       },
     });
 
@@ -163,7 +167,7 @@ router.post(
     recordDeclaredSignature({
       perceptualHash: fingerprint?.perceptual,
       byteHash: fingerprint?.hash,
-      generator: aiModel,
+      generator: model,
       trackId: track.id,
     });
 

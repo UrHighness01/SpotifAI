@@ -32,12 +32,38 @@ function TagChips({ line }: { line: string }) {
   );
 }
 
+// Clean speaker SVG — swaps between muted / low / high wave states so the
+// icon actually mirrors the volume level (replaces the raw 🔊 emoji).
+function VolumeIcon({ level, muted }: { level: number; muted: boolean }) {
+  const waves = muted || level === 0 ? 0 : level < 0.5 ? 1 : 2;
+  return (
+    <svg
+      className="vol-icon"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M11 5 6 9H2v6h4l5 4V5z" />
+      {waves >= 1 && <path d="M15.5 8.5a5 5 0 0 1 0 7" />}
+      {waves >= 2 && <path d="M18.5 5.5a9 9 0 0 1 0 13" />}
+      {waves === 0 && <path d="M15.5 9.5l5 5m0-5l-5 5" />}
+    </svg>
+  );
+}
+
 export function PlayerBar() {
   const { queue, currentIndex, isPlaying, togglePlay, next, prev, setPlaying } = usePlayerStore();
   const audioRef = useRef<HTMLAudioElement>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.8);
+  const [muted, setMuted] = useState(false);
   const [nanoBlurb, setNanoBlurb] = useState<string | null>(null);
   const [nanoTags, setNanoTags] = useState<string | null>(null);
 
@@ -83,8 +109,10 @@ export function PlayerBar() {
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (audio) audio.volume = volume;
-  }, [volume]);
+    if (audio) audio.volume = muted ? 0 : volume;
+  }, [volume, muted]);
+
+  const toggleMute = () => setMuted((m) => !m);
 
   if (!track) {
     return (
@@ -187,14 +215,26 @@ export function PlayerBar() {
       </div>
 
       <div className="player-volume">
-        <span style={{ fontSize: "0.9rem" }}>🔊</span>
+        <button
+          className="vol-mute-btn"
+          onClick={toggleMute}
+          aria-label={muted ? "Unmute" : "Mute"}
+          title={muted ? "Unmute" : "Mute"}
+        >
+          <VolumeIcon level={volume} muted={muted} />
+        </button>
         <input
           type="range"
+          className="vol-slider"
           min={0}
           max={1}
           step={0.01}
           value={volume}
-          onChange={(e) => setVolume(Number(e.target.value))}
+          onChange={(e) => {
+            setVolume(Number(e.target.value));
+            if (muted && Number(e.target.value) > 0) setMuted(false);
+          }}
+          aria-label="Volume"
         />
       </div>
     </div>

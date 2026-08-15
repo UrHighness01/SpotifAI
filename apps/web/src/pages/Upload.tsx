@@ -99,8 +99,12 @@ export function Upload() {
         )}
 
         <label>
-          AI model (e.g. Suno v4, Udio)
-          <input value={aiModel} onChange={(e) => setAiModel(e.target.value)} required />
+          AI model (optional — e.g. Suno v4, Udio)
+          <input
+            value={aiModel}
+            onChange={(e) => setAiModel(e.target.value)}
+            placeholder="Unknown (not disclosed)"
+          />
         </label>
 
         <label>

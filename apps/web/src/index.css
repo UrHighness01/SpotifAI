@@ -664,9 +664,58 @@ img.card-art {
   align-items: center;
   gap: 0.5rem;
 }
-.player-volume input[type="range"] {
-  width: 100px;
-  accent-color: var(--text);
+.vol-mute-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+  padding: 0;
+}
+.vol-mute-btn:hover {
+  color: var(--text);
+  background: var(--bg-card);
+}
+.vol-slider {
+  width: 90px;
+  height: 4px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--border);
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+}
+.vol-slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--text);
+  border: none;
+  transition: transform 0.12s ease;
+}
+.vol-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+.vol-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--text);
+  border: none;
+}
+.vol-slider::-moz-range-track {
+  height: 4px;
+  background: var(--border);
+  border-radius: 999px;
 }
 
 .auth-page {
