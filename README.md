@@ -1,4 +1,8 @@
-# SpotifAI
+<p align="center">
+  <img src="apps/web/public/favicon.svg" width="128" height="128" alt="SpotifAI logo" />
+</p>
+
+<h1 align="center">SpotifAI</h1>
 
 A Spotify-style streaming platform built exclusively for AI-generated music. Users register, upload tracks they hold rights or generation rights to, organize them into albums, playlists, and their liked-songs library, and follow each other's artist profiles. There is no distributor or label layer — the uploader's profile **is** the artist.
 
