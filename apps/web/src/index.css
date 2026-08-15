@@ -371,6 +371,18 @@ img.card-art {
 }
 .cover-upload:hover { border-color: var(--accent); color: var(--accent); }
 
+/* "Artist = uploader, no label" brand (Artist page) */
+.uploader-badge {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+}
+
 .add-to-playlist { position: relative; }
 .add-to-playlist-btn {
   background: none;

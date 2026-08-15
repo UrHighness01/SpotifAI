@@ -5,6 +5,7 @@ export interface ApiArtist {
   avatarPath: string | null;
   aiModel: string;
   createdAt: string;
+  owner?: { id: string; displayName: string };
 }
 
 export interface ApiAlbum {

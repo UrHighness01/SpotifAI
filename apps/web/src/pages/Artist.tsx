@@ -20,6 +20,17 @@ export function Artist() {
       <p style={{ color: "var(--text-dim)" }}>
         {artist.bio} · <span style={{ color: "var(--accent)" }}>{artist.aiModel}</span>
       </p>
+      {/* Differentiating brand (John's ideas pass #6): the artist IS the
+          uploader's own profile — no label or distributor layer in between.
+          Made explicit so the platform's model is self-evident. */}
+      {artist.owner && (
+        <p className="uploader-brand" style={{ marginTop: "0.4rem" }}>
+          <span className="uploader-badge">Artist = uploader</span>
+          <span style={{ color: "var(--text-dim)", fontSize: "0.85rem" }}>
+            {" "}Uploaded directly by {artist.owner.displayName} — no label, no distributor.
+          </span>
+        </p>
+      )}
 
       {artist.albums.length > 0 && (
         <>

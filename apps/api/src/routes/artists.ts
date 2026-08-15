@@ -25,7 +25,14 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   const artist = await prisma.artist.findUnique({
     where: { id: req.params.id },
-    include: { albums: true, tracks: { include: { album: true } } },
+    include: {
+      albums: true,
+      tracks: { include: { album: true } },
+      // The differentiating brand: an artist IS the uploader's own profile —
+      // there is no label or distributor layer. Surfacing the uploader
+      // identity makes that explicit (John's ideas pass #6).
+      owner: { select: { id: true, displayName: true } },
+    },
   });
   if (!artist) return res.status(404).json({ error: "artist not found" });
   res.json({ artist });
