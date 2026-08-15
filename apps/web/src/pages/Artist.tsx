@@ -162,7 +162,10 @@ export function Artist() {
         <div style={{ marginTop: "2.5rem" }}>
           <h2>Provenance wall</h2>
           <p style={{ color: "var(--text-dim)", fontSize: "0.85rem", marginBottom: "0.6rem" }}>
-            {artist.tracks.filter((t) => t.fingerprintHash).length} track(s) with fingerprints recorded at upload — this uploader's honesty is on the record.
+            {artist.tracks.filter((t) => t.fingerprintHash).length} track(s) with fingerprints recorded at upload — this uploader's honesty is on the record.{" "}
+            <a href={`/api/artists/${artist.id}/provenance-manifest`} target="_blank" rel="noopener noreferrer" className="support-link" style={{ fontSize: "0.8rem" }}>
+              Signed manifest →
+            </a>
           </p>
           {artist.tracks
             .filter((t) => t.fingerprintHash)

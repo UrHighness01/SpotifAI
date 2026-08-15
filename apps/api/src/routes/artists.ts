@@ -3,6 +3,7 @@ import path from "path";
 import { prisma } from "../db";
 import { requireAuth, AuthedRequest } from "../middleware/auth";
 import { writeCover } from "../lib/cover-art";
+import { signManifest, ProvenanceManifest } from "../lib/manifest";
 
 const router = Router();
 
@@ -36,6 +37,39 @@ router.get("/:id", async (req, res) => {
   });
   if (!artist) return res.status(404).json({ error: "artist not found" });
   res.json({ artist });
+});
+
+// Signed, exportable provenance manifest (John's Tier D #1): public by
+// design — anyone can download and verify the hashes offline against their
+// own copy of the audio, without trusting the website. The signature
+// (HMAC-SHA256 under the platform key) pins the manifest to the platform,
+// so tampering is detectable.
+router.get("/:id/provenance-manifest", async (req, res) => {
+  const artist = await prisma.artist.findUnique({
+    where: { id: req.params.id },
+    include: { tracks: { select: { id: true, title: true, aiModel: true, fingerprintHash: true, perceptualHash: true, fingerprintCapturedAt: true } } },
+  });
+  if (!artist) return res.status(404).json({ error: "artist not found" });
+
+  const fingerprintTracks = artist.tracks.filter((t) => t.fingerprintHash);
+  const manifest: ProvenanceManifest = {
+    schema: "spotifai-provenance-v1",
+    artistId: artist.id,
+    artistName: artist.name,
+    generatedAt: new Date().toISOString(),
+    tracks: fingerprintTracks.map((t) => ({
+      title: t.title,
+      trackId: t.id,
+      model: t.aiModel,
+      byteHash: t.fingerprintHash!,
+      perceptualHash: t.perceptualHash,
+      recordedAt: t.fingerprintCapturedAt?.toISOString() ?? "",
+    })),
+    signature: "", // replaced below
+  };
+  const { signature, ...payload } = manifest;
+  manifest.signature = signManifest(JSON.stringify(payload));
+  res.json(manifest);
 });
 
 router.post("/", requireAuth, async (req: AuthedRequest, res) => {
