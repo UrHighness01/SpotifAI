@@ -49,7 +49,7 @@ async function main() {
   const out = fs.createWriteStream(CORPUS_FILE, { flags: "a" });
   let n = 0;
   for (const t of tracks) {
-    if (existing.has(t.fingerprintHash)) continue;
+    if (existing.has(t.fingerprintHash!)) continue;
     const record = {
       perceptualHash: t.perceptualHash!,
       byteHash: t.fingerprintHash!,
@@ -60,7 +60,7 @@ async function main() {
       source: "declared-upload",
     };
     out.write(JSON.stringify(record) + "\n");
-    existing.add(t.fingerprintHash);
+    existing.add(t.fingerprintHash!);
     n++;
   }
   out.end();
