@@ -415,6 +415,18 @@ img.card-art {
   background: linear-gradient(135deg, #3a3a3a, #1a1a1a);
 }
 
+/* Remove-from-playlist button (PlaylistDetail rows) */
+.track-remove-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+}
+.track-remove-btn:hover { color: #f15e6c; }
+
 /* Heart inside track rows (Liked Songs list + everywhere rows appear) */
 .like-btn-on-row { padding: 0.15rem; }
 

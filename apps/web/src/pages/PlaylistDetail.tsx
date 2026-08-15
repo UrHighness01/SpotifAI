@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import { useAuth } from "../auth";
-import { usePlayerStore } from "../store/player";
+import { TrackRow } from "../components/TrackRow";
 import type { ApiPlaylistDetail } from "../types";
 
 export function PlaylistDetail() {
@@ -10,7 +10,6 @@ export function PlaylistDetail() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [playlist, setPlaylist] = useState<ApiPlaylistDetail | null>(null);
-  const playTrack = usePlayerStore((s) => s.playTrack);
 
   useEffect(() => {
     if (!loading && !user) navigate("/login");
@@ -36,24 +35,11 @@ export function PlaylistDetail() {
     <div>
       <h1 className="section-title">{playlist.name}</h1>
       <div>
+        {/* TrackRow renders the cover thumbnail on the left of the title
+            (user's ask) + the like heart, and supports playlist removal via
+            onRemove. */}
         {playlist.tracks.map((pt, i) => (
-          <div key={pt.trackId} className="track-row" onClick={() => playTrack(pt.track, tracks)}>
-            <span className="idx">{i + 1}</span>
-            <div>
-              <div className="title">{pt.track.title}</div>
-              <div className="artist">{pt.track.artist?.name || "Unknown artist"}</div>
-            </div>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onRemove(pt.trackId);
-              }}
-              style={{ background: "none", border: "none", color: "var(--text-dim)", cursor: "pointer" }}
-            >
-              Remove
-            </button>
-          </div>
+          <TrackRow key={pt.trackId} track={pt.track} index={i} queue={tracks} onRemove={onRemove} />
         ))}
         {playlist.tracks.length === 0 && (
           <div className="card-sub">No tracks yet — add some from Home, Search, or Liked Songs.</div>

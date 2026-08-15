@@ -16,9 +16,11 @@ interface Props {
   selectable?: boolean;
   selected?: boolean;
   onToggleSelect?: (e: React.MouseEvent) => void;
+  // Playlist removal (PlaylistDetail): shows a Remove button when provided.
+  onRemove?: (trackId: string) => void;
 }
 
-export function TrackRow({ track, index, queue, onMetaChange, selectable, selected, onToggleSelect }: Props) {
+export function TrackRow({ track, index, queue, onMetaChange, selectable, selected, onToggleSelect, onRemove }: Props) {
   const playTrack = usePlayerStore((s) => s.playTrack);
   const [showAi, setShowAi] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -97,6 +99,19 @@ export function TrackRow({ track, index, queue, onMetaChange, selectable, select
             the list — the shared library store optimistically removes it,
             and pages filtering by the store disappear the row live. */}
         <LikeButton trackId={track.id} className="like-btn-on-row" />
+        {onRemove && (
+          <button
+            type="button"
+            className="track-remove-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove(track.id);
+            }}
+            title="Remove from playlist"
+          >
+            Remove
+          </button>
+        )}
         <AddToPlaylist trackId={track.id} />
       </div>
       {showAi && (
