@@ -54,6 +54,11 @@ export function Search() {
             {model}
           </button>
         ))}
+        <span className="facet-label" style={{ marginLeft: "0.5rem" }}>
+          <Link to="/made-with/Suno v4" style={{ color: "var(--text-dim)", fontSize: "0.75rem" }}>
+            Browse all →
+          </Link>
+        </span>
       </div>
 
       {searched && (
