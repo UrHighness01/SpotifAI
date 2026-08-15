@@ -22,9 +22,23 @@ const VOCAB = path.join(__dirname, "engine", "vocab.tsv");
 
 const GEN_TOKENS = 96;
 
+// John's review guard #1: cap the request queue so a flapping renderer can't
+// stack unbounded spawned engine processes. Requests beyond the cap are
+// rejected fast (the renderer degrades gracefully).
+const MAX_QUEUE = 8;
+// John's review guard #2: truncate renderer-supplied track fields at the IPC
+// boundary — belt-and-suspenders memory hygiene even though the C engine
+// clamps the prompt to 2048 chars.
+const MAX_FIELD_CHARS = 256;
+
 let engine = null;
 let busy = false;
 let queue = [];
+
+function truncate(value) {
+  if (value == null) return "";
+  return String(value).slice(0, MAX_FIELD_CHARS);
+}
 
 function ensureEngine() {
   if (engine) return;
@@ -39,16 +53,20 @@ function ensureEngine() {
 
 function buildPrompt(track) {
   const head = [
-    `title: ${(track.title || "").toLowerCase()}`,
-    `aimodel: ${(track.aiModel || "unknown").toLowerCase()}`,
+    `title: ${truncate(track.title).toLowerCase()}`,
+    `aimodel: ${truncate(track.aiModel || "unknown").toLowerCase()}`,
   ];
-  if (track.genre) head.push(`genre: ${String(track.genre).toLowerCase()}`);
-  if (track.prompt) head.push(`prompt: ${String(track.prompt).toLowerCase()}`);
+  if (track.genre) head.push(`genre: ${truncate(track.genre).toLowerCase()}`);
+  if (track.prompt) head.push(`prompt: ${truncate(track.prompt).toLowerCase()}`);
   return `${head.join(" | ")} | blurb: `;
 }
 
 function request(prompt) {
   return new Promise((resolve, reject) => {
+    if (queue.length >= MAX_QUEUE) {
+      reject(new Error("nano queue full — try again"));
+      return;
+    }
     queue.push({ prompt, resolve, reject });
     pump();
   });
