@@ -72,13 +72,16 @@ export function Sidebar() {
 
       {/* Following (user's ask): artists I follow, listed right under the
           library nav so they're one click away. Loaded from the shared
-          follows store — updates instantly when I follow/unfollow. */}
+          follows store — updates instantly when I follow/unfollow.
+          ?from=following tells the artist page this is the FAN view (no
+          owner edit tools) even for my own artists — edits stay behind
+          "Your artists" on Home (user's ask). */}
       {user && followed.length > 0 && (
         <div className="sidebar-library sidebar-following">
           <h2>Following</h2>
           <nav>
             {followed.map((artist) => (
-              <NavLink key={artist.id} to={`/artist/${artist.id}`} className="sidebar-link sidebar-follow-link">
+              <NavLink key={artist.id} to={`/artist/${artist.id}?from=following`} className="sidebar-link sidebar-follow-link">
                 {artist.avatarPath ? (
                   <img className="sidebar-follow-avatar" src={mediaUrl(artist.avatarPath)!} alt="" />
                 ) : (

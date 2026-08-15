@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { api, API_BASE, REPORT_ADDRESS, mediaUrl } from "../api";
 import { TrackRow } from "../components/TrackRow";
 import { clampText } from "../utils/text";
@@ -10,12 +10,18 @@ import type { ApiArtist, ApiTrack, ApiAlbum } from "../types";
 export function Artist() {
   const { id } = useParams();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [artist, setArtist] = useState<(ApiArtist & { tracks: ApiTrack[]; albums: ApiAlbum[] }) | null>(null);
   const [followBusy, setFollowBusy] = useState(false);
   const [followError, setFollowError] = useState<string | null>(null);
   const following = useFollowsStore((s) => (id ? s.isFollowing(id) : false));
   const setFollowing = useFollowsStore((s) => s.setFollowing);
   const loadFollows = useFollowsStore((s) => s.load);
+
+  // Came from the sidebar "Following" list → FAN view: even for my own
+  // artist, owner edit tools stay hidden there (user's ask). Edits are only
+  // reachable via "Your artists" on Home (no ?from=following).
+  const fromFollowing = searchParams.get("from") === "following";
 
   useEffect(() => {
     if (id) api.artist(id).then((d) => setArtist(d.artist));
@@ -27,6 +33,9 @@ export function Artist() {
   }, [user, loadFollows]);
 
   const isOwn = Boolean(user && artist?.owner?.id === user.id);
+  // Owner tools (edit profile/avatar/banner, payout, you-own badge) show
+  // ONLY in the owner view — not via the Following sidebar shortcut.
+  const ownerView = isOwn && !fromFollowing;
 
   const toggleFollow = async () => {
     if (!id || followBusy) return;
@@ -62,28 +71,28 @@ export function Artist() {
         </div>
       )}
       <h1 className="section-title">{artist.name}</h1>
-      {/* You-own badge (user's ask): make the link to my account explicit —
-          previously nothing distinguished 'your artist' from anyone else's,
-          so Virtual Verse felt like it belonged to nobody. */}
-      {isOwn && (
+      {/* You-own badge (user's ask): makes the link to my account explicit —
+          shown in the owner view only (the fan view from Following stays a
+          plain artist page, per the request). */}
+      {ownerView && (
         <p className="owner-badge">✓ You own this artist — it's linked to your account</p>
       )}
       <p style={{ color: "var(--text-dim)" }}>
         {artist.bio} · <span style={{ color: "var(--accent)" }}>{artist.aiModel}</span>
       </p>
-      {/* Follow the uploader (John's Tier 2 #5): no labels means the
-          uploader's fanbase is the distribution engine. Hidden on your own
-          artist — the API 400s there anyway, and hiding it is clearer. */}
-      {user && !isOwn && (
+      {/* Follow button — always available when logged in, INCLUDING on my
+          own artist (user's ask): following my own artist puts it in the
+          sidebar "Following" list as a fan-view shortcut. */}
+      {user && (
         <button className="ai-edit-btn" onClick={toggleFollow} disabled={followBusy}>
           {following ? "Following ✓" : "Follow"}
         </button>
       )}
       {followError && <div className="auth-error">{followError}</div>}
 
-      {/* Customize your artist page (user's ask): edit name/bio, upload an
-          avatar + banner — owner only. */}
-      {isOwn && <ArtistProfileEditor artistId={artist.id} artistName={artist.name} artistBio={artist.bio} onSaved={() => api.artist(artist.id).then((d) => setArtist(d.artist))} />}
+      {/* Customize your artist page (owner view only, user's ask): edit
+          name/bio, upload an avatar + banner. */}
+      {ownerView && <ArtistProfileEditor artistId={artist.id} artistName={artist.name} artistBio={artist.bio} onSaved={() => api.artist(artist.id).then((d) => setArtist(d.artist))} />}
 
       {/* Support / payout (Tier A #1-2 + Tier F #5 trust safety): the
           uploader's external payout handle — the literal absence of a
@@ -113,7 +122,7 @@ export function Artist() {
         </p>
       )}
       {/* Owner sets the payout handle (Tier A #1). */}
-      {user && artist.owner?.id === user.id && <PayoutEditor artistId={artist.id} payoutKind={artist.payoutKind} payoutHandle={artist.payoutHandle} onSaved={() => api.artist(artist.id).then((d) => setArtist(d.artist))} />}
+      {ownerView && <PayoutEditor artistId={artist.id} payoutKind={artist.payoutKind} payoutHandle={artist.payoutHandle} onSaved={() => api.artist(artist.id).then((d) => setArtist(d.artist))} />}
       {/* Differentiating brand (John's ideas pass #6): the artist IS the
           uploader's own profile — no label or distributor layer in between.
           Made explicit so the platform's model is self-evident. */}

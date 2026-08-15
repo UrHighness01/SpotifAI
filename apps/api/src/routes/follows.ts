@@ -13,10 +13,12 @@ const TRACK_INCLUDE = {
 // Follow an uploader-artist (John's Tier 2 #5): no labels means the
 // uploader's fanbase is the distribution engine — following + a new-drop
 // feed makes that real. The "artist" IS the uploader's profile.
+// Self-following is allowed (user's ask): following your own artist makes
+// it appear in the sidebar "Following" list — a fan-view shortcut to your
+// page (no edit tools there; edits stay behind "Your artists").
 router.post("/:artistId", requireAuth, async (req: AuthedRequest, res) => {
   const artist = await prisma.artist.findUnique({ where: { id: req.params.artistId } });
   if (!artist) return res.status(404).json({ error: "artist not found" });
-  if (artist.ownerId === req.userId) return res.status(400).json({ error: "you cannot follow your own artist profile" });
 
   await prisma.follow.upsert({
     where: { userId_artistId: { userId: req.userId!, artistId: artist.id } },
