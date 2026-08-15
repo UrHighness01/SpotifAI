@@ -40,7 +40,6 @@ apps/
   desktop/         Electron shell + nano on-device model (C engine, worker)
 packages/
   types/           TypeScript types shared between api and web
-docs/decisions/    Design decisions (Trust-Floor policy, recommendations)
 storage/           Uploaded audio, covers, avatars, banners (gitignored)
 ```
 
@@ -136,4 +135,4 @@ Starts the API + web dev servers, waits for the web server, then opens an Electr
 
 ## Status
 
-Early-stage but actively developed. Reviewed for hardening (see `docs/decisions/TRUST_FLOOR_POLICY.md`); treat as pre-production.
+Early-stage but actively developed. Treat as pre-production.

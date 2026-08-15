@@ -41,5 +41,7 @@ apps/api/prisma/dev.db-journal
 # local loop-graph scratch docs — kept in the folder, never committed
 build-loop.html
 build-loop-nano.html
+# development decision notes — local scratch, not source code
+/docs/decisions/
 .claude/
 *.tsbuildinfo
