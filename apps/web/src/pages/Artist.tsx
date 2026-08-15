@@ -57,9 +57,12 @@ export function Artist() {
         </button>
       )}
 
-      {/* Support / payout (Tier A #1-2): the uploader's external payout
-          handle — the literal absence of a label. One click routes money
-          directly at the artist, zero platform custody or fee. */}
+      {/* Support / payout (Tier A #1-2 + Tier F #5 trust safety): the
+          uploader's external payout handle — the literal absence of a
+          label. One click routes money directly at the artist, zero
+          platform custody or fee. The resolved host is always shown and a
+          report link is available — a community-reportable payout surface
+          is what makes the economics layer safe to scale. */}
       {artist.payoutHandle && artist.payoutKind && (
         <p style={{ marginTop: "0.5rem" }}>
           <a
@@ -70,7 +73,15 @@ export function Artist() {
           >
             Support {artist.name} via {artist.payoutKind} →
           </a>
-          <span style={{ color: "var(--text-dim)", fontSize: "0.78rem" }}> (direct to artist, no middleman)</span>
+          <span style={{ color: "var(--text-dim)", fontSize: "0.78rem" }}>
+            {" "}(direct to artist, no middleman · {new URL(artist.payoutHandle).hostname})
+          </span>
+          <a
+            href={`mailto:abuse@spotifai.local?subject=Report payout: ${encodeURIComponent(artist.name)} (${encodeURIComponent(artist.payoutHandle)})`}
+            className="report-link"
+          >
+            {" "}· report suspicious
+          </a>
         </p>
       )}
       {/* Owner sets the payout handle (Tier A #1). */}

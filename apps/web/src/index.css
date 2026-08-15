@@ -461,6 +461,14 @@ img.card-art {
 }
 .support-link:hover { opacity: 0.8; }
 
+/* Report suspicious payout (Tier F #5 trust safety) */
+.report-link {
+  color: var(--flag, #a13a2e);
+  font-size: 0.75rem;
+  text-decoration: none;
+}
+.report-link:hover { text-decoration: underline; }
+
 .add-to-playlist { position: relative; }
 .add-to-playlist-btn {
   background: none;

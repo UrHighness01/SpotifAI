@@ -59,6 +59,23 @@ router.post("/", requireAuth, async (req: AuthedRequest, res) => {
 // directly at themselves, the literal opposite of a label's cut. Owner-only.
 const PAYOUT_KINDS = ["ko-fi", "stripe", "paypal", "btc", "other"];
 
+// John's review ticket: kind↔host cross-validation. A 'ko-fi' handle must
+// point at ko-fi.com, 'paypal' at paypal.com, etc. — otherwise a phishing
+// handle could masquerade as a trusted kind on the money path.
+const KIND_HOSTS: Record<string, string[]> = {
+  "ko-fi": ["ko-fi.com", "ko-fi.dev"],
+  paypal: ["paypal.com", "paypal.me"],
+  stripe: ["stripe.com", "buy.stripe.com"],
+};
+
+function hostOf(url: string): string | null {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
 router.patch("/:id/payout", requireAuth, async (req: AuthedRequest, res) => {
   const { payoutKind, payoutHandle } = req.body || {};
   if (payoutKind !== undefined && !PAYOUT_KINDS.includes(payoutKind)) {
@@ -72,6 +89,19 @@ router.patch("/:id/payout", requireAuth, async (req: AuthedRequest, res) => {
   // (defense in depth beyond rel=noopener). Same posture as an allowlist.
   if (payoutHandle !== undefined && payoutHandle && !/^https?:\/\//.test(payoutHandle)) {
     return res.status(400).json({ error: "payoutHandle must be an http(s) URL" });
+  }
+  // Kind↔host coherence (John's ticket): when both kind + handle are set,
+  // the handle's host must match the kind's known domains (unless 'other').
+  if (payoutHandle && payoutKind && payoutKind !== "other") {
+    const expected = KIND_HOSTS[payoutKind];
+    if (expected) {
+      const host = hostOf(payoutHandle);
+      if (!host || !expected.some((h) => host === h || host.endsWith(`.${h}`))) {
+        return res.status(400).json({
+          error: `payoutHandle host must be one of: ${expected.join(", ")} for payoutKind '${payoutKind}'`,
+        });
+      }
+    }
   }
   const artist = await prisma.artist.findUnique({ where: { id: req.params.id } });
   if (!artist) return res.status(404).json({ error: "artist not found" });
