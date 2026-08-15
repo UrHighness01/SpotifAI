@@ -8,6 +8,8 @@ export function Album() {
   const { id } = useParams();
   const [album, setAlbum] = useState<(ApiAlbum & { tracks: ApiTrack[] }) | null>(null);
   const [related, setRelated] = useState<ApiTrack[]>([]);
+  const [similar, setSimilar] = useState<ApiTrack[]>([]);
+  const [similarReasons, setSimilarReasons] = useState<Record<string, string>>({});
   const [blurb, setBlurb] = useState<string | null>(null);
   const [nanoAvailable, setNanoAvailable] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -25,6 +27,7 @@ export function Album() {
         // representative signal this album has.
         const seed = [...(d.album.tracks ?? [])].sort((a, b) => b.playCount - a.playCount)[0];
         if (seed) api.relatedTracks(seed.id).then((r) => setRelated(r.tracks));
+        if (seed) api.similarTracks(seed.id).then((r) => { setSimilar(r.tracks); setSimilarReasons(r.reasons); });
 
         // On-device nano track describer (desktop app only). Blurb generation
         // is a hard-rule "blurb, never explainer" — it describes the track,
@@ -110,6 +113,26 @@ export function Album() {
           </div>
           {related.map((track, i) => (
             <TrackRow key={track.id} track={track} index={i} queue={related} />
+          ))}
+        </div>
+      )}
+
+      {/* Provenance-as-navigation (John's feature A): 'from this sound' —
+          the recorded perceptual-hash + lineage as a browse metaphor. */}
+      {similar.length > 0 && (
+        <div style={{ marginTop: "2.5rem" }}>
+          <div className="section-head">
+            <h2 className="section-title">From this sound</h2>
+          </div>
+          {similar.map((track, i) => (
+            <div key={track.id}>
+              <TrackRow track={track} index={i} queue={similar} />
+              <div className="recipe-card" style={{ marginBottom: "0.5rem", marginLeft: "3rem" }}>
+                <div className="recipe-row">
+                  <span className="ai-detail-label">Why</span> {similarReasons[track.id] ?? "related"}
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       )}

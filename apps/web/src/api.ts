@@ -64,6 +64,7 @@ export const api = {
   updateTrackMeta: (id: string, meta: { aiPrompt?: string | null; aiGenerationNotes?: string | null; rightsNotice?: string; remixOfId?: string | null; licensePriceUsd?: number | null; licenseTerms?: string | null }) =>
     request(`/tracks/${id}/meta`, { method: "PATCH", body: JSON.stringify(meta) }),
   relatedTracks: (id: string) => request(`/tracks/${id}/related`),
+  similarTracks: (id: string) => request(`/tracks/${id}/similar`),
   recommendedTracks: () => request("/tracks/recommended"),
   attestTrack: (id: string, byteHash: string, handle: string) =>
     request(`/tracks/${id}/attest`, { method: "POST", body: JSON.stringify({ byteHash, handle }) }),

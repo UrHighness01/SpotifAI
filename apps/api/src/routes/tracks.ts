@@ -469,4 +469,62 @@ router.get("/:id/attestations", async (req, res) => {
   res.json({ attestations });
 });
 
+// Provenance-as-navigation (John's feature A): 'from this sound' — tracks
+// whose recorded perceptualHash matches this one's (the strongest sound-
+// similarity signal we have; exact-match on the windowed fingerprint) plus
+// same-artist / same-generator fallback. Turns the honesty stack into
+// searchable audio genealogy: the provable chain + phonetically-close
+// continuations, a browse metaphor no label-centric service can offer.
+router.get("/:id/similar", async (req, res) => {
+  const track = await prisma.track.findUnique({
+    where: { id: req.params.id },
+    select: { id: true, artistId: true, aiModel: true, perceptualHash: true },
+  });
+  if (!track) return res.status(404).json({ error: "track not found" });
+
+  const out: { id: string; why: string }[] = [];
+  const seen = new Set([track.id]);
+
+  const push = (id: string, why: string) => {
+    if (!seen.has(id)) {
+      seen.add(id);
+      out.push({ id, why });
+    }
+  };
+
+  // 1. Same recorded perceptual hash — the 'same sound' signal.
+  if (track.perceptualHash) {
+    const sameSound = await prisma.track.findMany({
+      where: { perceptualHash: track.perceptualHash, id: { not: track.id } },
+      select: { id: true },
+      take: 10,
+    });
+    sameSound.forEach((t) => push(t.id, "same recorded sound"));
+  }
+
+  // 2. Same artist (the uploader's own catalog).
+  const sameArtist = await prisma.track.findMany({
+    where: { artistId: track.artistId, id: { not: track.id } },
+    select: { id: true },
+    take: 10,
+  });
+  sameArtist.forEach((t) => push(t.id, "same artist"));
+
+  // 3. Same generator as a loose 'similar method' proxy.
+  if (track.aiModel !== "unknown" && out.length < 10) {
+    const sameModel = await prisma.track.findMany({
+      where: { aiModel: track.aiModel, id: { notIn: [...seen] } },
+      select: { id: true },
+      take: 10,
+    });
+    sameModel.forEach((t) => push(t.id, "same generator"));
+  }
+
+  const tracks = await prisma.track.findMany({ where: { id: { in: out.map((o) => o.id) } }, include: TRACK_INCLUDE });
+  const byId = new Map(tracks.map((t) => [t.id, t]));
+  const ordered = out.map((o) => byId.get(o.id)).filter((t): t is NonNullable<typeof t> => Boolean(t));
+  const reasons = new Map(out.map((o) => [o.id, o.why]));
+  res.json({ tracks: ordered, reasons: Object.fromEntries(ordered.map((t) => [t.id, reasons.get(t.id)])) });
+});
+
 export default router;
