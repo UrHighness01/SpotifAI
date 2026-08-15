@@ -94,6 +94,7 @@ export const api = {
     request(`/collabs/track/${trackId}/request`, { method: "POST", body: JSON.stringify({ message }) }),
   respondCollab: (id: string, status: "accepted" | "rejected") =>
     request(`/collabs/${id}`, { method: "PATCH", body: JSON.stringify({ status }) }),
+  corpusStatus: () => request("/corpus/status"),
 
   upload: (formData: FormData) => request("/upload/track", { method: "POST", body: formData }),
 

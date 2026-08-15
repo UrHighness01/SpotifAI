@@ -20,6 +20,7 @@ import libraryRoutes from "./routes/library";
 import playlistRoutes from "./routes/playlists";
 import followRoutes from "./routes/follows";
 import collabRoutes from "./routes/collabs";
+import corpusRoutes from "./routes/corpus";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -93,6 +94,7 @@ app.use("/library", writeLimiter, libraryRoutes);
 app.use("/playlists", writeLimiter, playlistRoutes);
 app.use("/follows", writeLimiter, followRoutes);
 app.use("/collabs", writeLimiter, collabRoutes);
+app.use("/corpus", corpusRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: "not found" });
