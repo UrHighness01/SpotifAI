@@ -31,6 +31,10 @@ apps/desktop/nano/engine/vocab.tsv
 
 # generator-signature corpus — collected data, not source
 apps/prisma/corpus/*.jsonl
+# ...but the gate-passing SNAPSHOT + hash record ARE committed (auditability —
+# the corpus that underwrites signature-matched must be reproducibly pinned)
+!apps/prisma/corpus/snapshots/*.jsonl
+!apps/prisma/corpus/snapshots/README.txt
 apps/api/prisma/dev.db-journal
 build-loop.html
 .claude/
