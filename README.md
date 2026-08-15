@@ -136,3 +136,10 @@ Starts the API + web dev servers, waits for the web server, then opens an Electr
 ## Status
 
 Early-stage but actively developed. Treat as pre-production.
+
+## License
+
+MIT — see [LICENSE](LICENSE). Free to use, fork, and modify. The bundled nano
+on-device model (trained corpus + C engine) is included under the same license;
+the generated audio corpus snapshots are hash records only and carry no
+copyrightable content.
