@@ -7,14 +7,25 @@ import { TrackRow } from "../components/TrackRow";
 import { TrackCard } from "../components/TrackCard";
 import { clampText } from "../utils/text";
 
-function greeting() {
-  const h = new Date().getHours();
+// Greeting follows the USER's system time (new Date() is the browser's local
+// clock — never the server's). Kept live via a timer in Home so an app left
+// open all day flips from Good morning → afternoon → evening on its own.
+function greeting(h: number) {
   if (h < 12) return "Good morning";
   if (h < 18) return "Good afternoon";
   return "Good evening";
 }
 
 export function Home() {
+  // Live clock state: refreshes every 30s so the greeting tracks the user's
+  // local time even without any re-render from data changes.
+  const [hour, setHour] = useState(() => new Date().getHours());
+
+  useEffect(() => {
+    const id = setInterval(() => setHour(new Date().getHours()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   const [artists, setArtists] = useState<ApiArtist[]>([]);
   const [tracks, setTracks] = useState<ApiTrack[]>([]);
   const [trending, setTrending] = useState<ApiTrack[]>([]);
@@ -46,7 +57,7 @@ export function Home() {
 
   return (
     <div>
-      <h1 className="page-greeting">{greeting()}</h1>
+      <h1 className="page-greeting">{greeting(hour)}</h1>
 
       <div className="section-head">
         <h2 className="section-title">AI Artists</h2>

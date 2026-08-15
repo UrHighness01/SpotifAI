@@ -4,7 +4,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import path from "path";
 
 import "./lib/secrets";
@@ -37,7 +37,10 @@ function rateLimitKey(req: express.Request): string {
       /* invalid/expired token — fall through to IP */
     }
   }
-  return req.ip ?? "unknown";
+  // ipKeyGenerator normalizes IPv6 addresses to a /56 subnet, so anonymous
+  // users can't cycle addresses to bypass the limit. Without it, v8 throws
+  // ERR_ERL_KEY_GEN_IPV6 at startup (the terminal error we saw).
+  return ipKeyGenerator(req.ip ?? "unknown");
 }
 import corpusRoutes from "./routes/corpus";
 
