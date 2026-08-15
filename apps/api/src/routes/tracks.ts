@@ -378,11 +378,32 @@ router.patch("/:id/meta", requireAuth, async (req: AuthedRequest, res) => {
   res.json({ track: updated });
 });
 
-// Community attestation ring (John's Tier H #3): anyone who has the actual
-// audio can independently verify it against the track's recorded byteHash
-// and record their attestation ('I also have this file and it matches').
-// The platform stays humble ('we recorded it'); the community adds
-// credibility. Per-hash, verifiable, self-interested to check.
+// Community attestation ring (John's Tier H #3 + consolidation #2): anyone
+// who has the actual audio can independently verify it against the track's
+// recorded byteHash and record their attestation. The platform stays humble
+// ('we recorded it'); the community adds credibility. Per-hash, verifiable.
+//
+// Integrity (John's consolidation #2): the count is labeled honestly — it
+// counts *attestations by logged-in listeners*, which a determined attacker
+// could inflate with burner accounts (no sybil-resistance yet). That is
+// stated in the UI label, not hidden. A simple per-user rate limit bounds
+// scripted spam. Future: gate meaningful counts behind account verification
+// (anti-sybil) before the count can power ranking.
+const ATTEST_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+const ATTEST_LIMIT_MAX = 20;
+const attestLimits = new Map<string, { count: number; resetAt: number }>();
+
+function attestRateLimited(userId: string): boolean {
+  const now = Date.now();
+  const entry = attestLimits.get(userId);
+  if (!entry || now > entry.resetAt) {
+    attestLimits.set(userId, { count: 1, resetAt: now + ATTEST_LIMIT_WINDOW_MS });
+    return false;
+  }
+  entry.count++;
+  return entry.count > ATTEST_LIMIT_MAX;
+}
+
 router.post("/:id/attest", requireAuth, async (req: AuthedRequest, res) => {
   const { byteHash, handle } = req.body || {};
   if (typeof byteHash !== "string" || !/^[0-9a-f]{16}$/.test(byteHash)) {
@@ -390,6 +411,9 @@ router.post("/:id/attest", requireAuth, async (req: AuthedRequest, res) => {
   }
   if (typeof handle !== "string" || handle.length < 2 || handle.length > 60) {
     return res.status(400).json({ error: "handle must be a string 2-60 chars" });
+  }
+  if (attestRateLimited(req.userId!)) {
+    return res.status(429).json({ error: "too many attestations — try again later" });
   }
 
   const track = await prisma.track.findUnique({ where: { id: req.params.id }, select: { id: true, fingerprintHash: true } });
