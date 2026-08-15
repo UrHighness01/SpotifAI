@@ -300,15 +300,35 @@ router.patch("/:id/meta", requireAuth, async (req: AuthedRequest, res) => {
 
   // remixOfId: metadata-only attribution (John's next-ideas #7) — this
   // track was remixed/continued from another. Honor-system at first; must
-  // point at an existing track (self-remix rejected).
+  // point at an existing track (self-remix rejected) and must not create a
+  // cycle (John's hardening item b: keep the remix graph a DAG, depth-capped
+  // so a future remix-family-tree UI can't be walked infinitely).
   let remixTarget: string | null | undefined = undefined;
   if (remixOfId !== undefined) {
     if (remixOfId === track.id) {
       return res.status(400).json({ error: "a track cannot be a remix of itself" });
     }
     if (remixOfId) {
-      const target = await prisma.track.findUnique({ where: { id: remixOfId }, select: { id: true } });
-      if (!target) return res.status(404).json({ error: "remix source track not found" });
+      // Walk the chain upward from the proposed source; if we ever reach the
+      // target track, this would create a cycle.
+      const MAX_REMIX_DEPTH = 16;
+      let cursor: string | null = remixOfId;
+      let depth = 0;
+      let exists = false;
+      while (cursor && depth <= MAX_REMIX_DEPTH) {
+        if (cursor === track.id) {
+          return res.status(400).json({ error: "remix chain would create a cycle" });
+        }
+        const node = await prisma.track.findUnique({ where: { id: cursor }, select: { id: true, remixOfId: true } });
+        if (!node) break;
+        exists = true;
+        cursor = node.remixOfId;
+        depth++;
+      }
+      if (!exists) return res.status(404).json({ error: "remix source track not found" });
+      if (depth > MAX_REMIX_DEPTH) {
+        return res.status(400).json({ error: `remix chain too deep (max ${MAX_REMIX_DEPTH})` });
+      }
       remixTarget = remixOfId;
     } else {
       remixTarget = null;

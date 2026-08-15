@@ -73,8 +73,14 @@ function request(prompt) {
 }
 
 // Tags mode: `track_describer --tags < prompt` — no model, instant.
+// Shares the same queue cap as blurb generation (John's review: two
+// uncapped spawn paths = host-resource DoS if a renderer spams; cap both).
 function requestTags(prompt) {
   return new Promise((resolve, reject) => {
+    if (queue.length >= MAX_QUEUE) {
+      reject(new Error("nano queue full — try again"));
+      return;
+    }
     const child = spawn(ENGINE, ["--tags"], { stdio: ["pipe", "pipe", "inherit"] });
     let out = "";
     child.stdout.on("data", (chunk) => (out += chunk.toString()));
