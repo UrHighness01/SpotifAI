@@ -1,6 +1,9 @@
 node_modules/
 dist/
 build/
+apps/desktop/dist/
+.electron-cache/
+.electron-builder-cache/
 .env
 .env.*
 storage/audio/*
