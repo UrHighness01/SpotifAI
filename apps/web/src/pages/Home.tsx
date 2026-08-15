@@ -204,7 +204,7 @@ export function Home() {
               <div key={track.id}>
                 <TrackRow track={track} index={i} queue={followFeed} />
                 {track.aiPrompt && (
-                  <div className="recipe-card" style={{ marginBottom: "0.5rem", marginLeft: "3rem" }}>
+                  <div className="recipe-card" style={{ marginBottom: "0.5rem", marginLeft: "6.2rem" }}>
                     <div className="recipe-row">
                       <span className="ai-detail-label">Made from</span> “{clampText(track.aiPrompt, 120)}”
                     </div>

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { usePlayerStore } from "../store/player";
 import { AddToPlaylist } from "./AddToPlaylist";
 import { LikeButton } from "./LikeButton";
-import { api } from "../api";
+import { api, mediaUrl } from "../api";
 import { clampText } from "../utils/text";
 import type { ApiTrack } from "../types";
 
@@ -68,6 +68,13 @@ export function TrackRow({ track, index, queue, onMetaChange, selectable, select
     <>
       <div className={`track-row${selected ? " selected" : ""}`} onClick={onRowClick}>
         <span className="idx">{selected ? "✓" : index + 1}</span>
+        {/* Cover thumbnail (user's ask): the album/song cover on the left of
+            the title in every track list (playlists, search, library…). */}
+        {track.album?.coverPath ? (
+          <img className="track-thumb" src={mediaUrl(track.album.coverPath)!} alt="" />
+        ) : (
+          <div className="track-thumb track-thumb-placeholder" />
+        )}
         <div>
           <div className="title">{track.title}</div>
           <div className="artist">{track.artist?.name || "Unknown artist"}</div>

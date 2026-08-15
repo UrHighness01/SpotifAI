@@ -388,8 +388,9 @@ img.card-art {
 
 .track-row {
   display: grid;
-  grid-template-columns: 32px 1fr auto auto auto auto;
-  gap: 1rem;
+  /* idx · cover thumb · title/artist · aiModel · detail-toggle · like · add-to-playlist */
+  grid-template-columns: 32px 40px 1fr auto auto auto auto;
+  gap: 0.85rem;
   align-items: center;
   padding: 0.5rem 0.75rem;
   border-radius: 4px;
@@ -401,6 +402,18 @@ img.card-art {
 .track-row .idx { color: var(--text-dim); font-size: 0.85rem; }
 .track-row .title { font-weight: 500; }
 .track-row .artist { color: var(--text-dim); font-size: 0.85rem; }
+
+/* Cover thumbnail on track rows (user's ask) — small square album art */
+.track-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  object-fit: cover;
+  display: block;
+}
+.track-thumb-placeholder {
+  background: linear-gradient(135deg, #3a3a3a, #1a1a1a);
+}
 
 /* Heart inside track rows (Liked Songs list + everywhere rows appear) */
 .like-btn-on-row { padding: 0.15rem; }
@@ -469,7 +482,8 @@ img.card-art {
 }
 .ai-detail-toggle:hover { color: var(--accent); }
 .ai-detail-panel {
-  margin: 0 0 0.4rem 3rem;
+  /* Indent under the row's title — 32px idx + 40px thumb + 2 gaps */
+  margin: 0 0 0.4rem 6.2rem;
   padding: 0.6rem 0.9rem;
   border-left: 2px solid var(--accent);
   background: var(--bg-panel-raised);

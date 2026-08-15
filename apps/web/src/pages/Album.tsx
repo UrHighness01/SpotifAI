@@ -127,7 +127,7 @@ export function Album() {
           {similar.map((track, i) => (
             <div key={track.id}>
               <TrackRow track={track} index={i} queue={similar} />
-              <div className="recipe-card" style={{ marginBottom: "0.5rem", marginLeft: "3rem" }}>
+              <div className="recipe-card" style={{ marginBottom: "0.5rem", marginLeft: "6.2rem" }}>
                 <div className="recipe-row">
                   <span className="ai-detail-label">Why</span> {similarReasons[track.id] ?? "related"}
                 </div>
