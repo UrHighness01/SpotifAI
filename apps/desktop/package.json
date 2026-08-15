@@ -5,7 +5,11 @@
   "main": "src/main.js",
   "scripts": {
     "dev": "electron .",
-    "build": "electron-builder"
+    "build": "electron-builder",
+    "nano:corpus": "python3 nano/corpus/build_corpus.py",
+    "nano:verify": "python3 nano/corpus/verify_blurbs.py",
+    "nano:train": "python3 /home/jmax/.openclaw/workspace-john/GitHub/Project-K/tools/train_simple_gla.py --dataset spotifai_music --meta nano/corpus/spotifai_music_meta.pkl --output /tmp/spotifai_music.pt",
+    "nano:export": "python3 /home/jmax/.openclaw/workspace-john/GitHub/Project-K/tools/export_int4_bin.py --ckpt /tmp/spotifai_music.pt --output nano/track-describer.bin"
   },
   "devDependencies": {
     "electron": "^32.1.2",

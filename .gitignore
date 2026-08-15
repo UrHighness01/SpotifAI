@@ -19,6 +19,11 @@ storage/avatars/*
 *.log
 .DS_Store
 apps/api/prisma/dev.db
+
+# nano corpus derived artifacts — regenerable via `npm run nano:corpus`
+apps/desktop/nano/corpus/*.bin
+apps/desktop/nano/corpus/*.pkl
+apps/desktop/nano/*.bin
 apps/api/prisma/dev.db-journal
 build-loop.html
 .claude/
