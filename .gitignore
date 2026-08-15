@@ -24,6 +24,10 @@ apps/api/prisma/dev.db
 apps/desktop/nano/corpus/*.bin
 apps/desktop/nano/corpus/*.pkl
 apps/desktop/nano/*.bin
+
+# nano engine build artifacts (regenerable via gcc) + derived vocab
+apps/desktop/nano/engine/track_describer
+apps/desktop/nano/engine/vocab.tsv
 apps/api/prisma/dev.db-journal
 build-loop.html
 .claude/
