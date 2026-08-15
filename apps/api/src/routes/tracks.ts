@@ -85,7 +85,17 @@ router.get("/", async (req, res) => {
   const sort = typeof req.query.sort === "string" ? req.query.sort : undefined;
   const tracks = await prisma.track.findMany({
     where: {
-      ...(q ? { title: { contains: q } } : {}),
+      // Spotify-esque search: match title OR the artist's name (the artist
+      // IS the uploader's profile, so searching an uploader finds their
+      // tracks too).
+      ...(q
+        ? {
+            OR: [
+              { title: { contains: q } },
+              { artist: { name: { contains: q } } },
+            ],
+          }
+        : {}),
       ...(artistId ? { artistId } : {}),
       ...(albumId ? { albumId } : {}),
       ...(aiModel ? { aiModel } : {}),
