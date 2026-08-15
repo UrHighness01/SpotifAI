@@ -28,6 +28,9 @@ apps/desktop/nano/*.bin
 # nano engine build artifacts (regenerable via gcc) + derived vocab
 apps/desktop/nano/engine/track_describer
 apps/desktop/nano/engine/vocab.tsv
+
+# generator-signature corpus — collected data, not source
+apps/prisma/corpus/*.jsonl
 apps/api/prisma/dev.db-journal
 build-loop.html
 .claude/
