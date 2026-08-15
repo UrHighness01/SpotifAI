@@ -141,6 +141,41 @@ export function Artist() {
             ))}
         </div>
       )}
+
+      {/* Provenance wall (John's Tier B #4): a public, immutable log of
+          every fingerprint captured by this uploader. Because artist =
+          uploader, this turns the per-track badge into a reputation surface
+          — a creator honest across 100 tracks is visibly more trustworthy
+          than one who isn't. */}
+      {artist.tracks.some((t) => t.fingerprintHash) && (
+        <div style={{ marginTop: "2.5rem" }}>
+          <h2>Provenance wall</h2>
+          <p style={{ color: "var(--text-dim)", fontSize: "0.85rem", marginBottom: "0.6rem" }}>
+            {artist.tracks.filter((t) => t.fingerprintHash).length} track(s) with fingerprints recorded at upload — this uploader's honesty is on the record.
+          </p>
+          {artist.tracks
+            .filter((t) => t.fingerprintHash)
+            .map((track) => (
+              <div key={track.id} className="recipe-card">
+                <div className="recipe-title">{track.title}</div>
+                <div className="recipe-row">
+                  <span className="ai-detail-label">Model</span> {track.aiModel}
+                </div>
+                <div className="recipe-row">
+                  <span className="ai-detail-label">Fingerprint</span>{" "}
+                  <span className={`rights-badge provenance ${track.provenanceStatus || "recorded"}`}>
+                    ✓ {track.provenanceStatus || "recorded"} · {track.fingerprintHash}
+                  </span>
+                </div>
+                {track.fingerprintCapturedAt && (
+                  <div className="recipe-row">
+                    <span className="ai-detail-label">Recorded</span> {new Date(track.fingerprintCapturedAt).toLocaleString()}
+                  </div>
+                )}
+              </div>
+            ))}
+        </div>
+      )}
     </div>
   );
 }
