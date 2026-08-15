@@ -78,6 +78,11 @@ router.post("/register", async (req, res) => {
   res.status(201).json({
     user: publicUser(user),
     message: "Registered. Check your email to verify your account before logging in.",
+    // DEV MODE (no SMTP configured): the email is only printed to the
+    // console, so surface the verification link here so testers can actually
+    // complete registration. NEVER exposed in production (SMTP must be set;
+    // the email is the only channel there).
+    ...(process.env.NODE_ENV !== "production" && !process.env.SMTP_HOST ? { devVerifyUrl: verifyUrl } : {}),
   });
 });
 

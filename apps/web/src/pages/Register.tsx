@@ -8,13 +8,18 @@ export function Register() {
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [registered, setRegistered] = useState(false);
+  const [devVerifyUrl, setDevVerifyUrl] = useState<string | null>(null);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
     try {
-      await api.register(email, password, displayName);
+      const res = await api.register(email, password, displayName);
       setRegistered(true);
+      // Dev mode: the API returns the verification link (no SMTP configured —
+      // the email is only printed to the server console). Show it so testers
+      // can complete registration.
+      if (res.devVerifyUrl) setDevVerifyUrl(res.devVerifyUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     }
@@ -29,6 +34,15 @@ export function Register() {
             We sent a verification link to <strong>{email}</strong>. Click it to activate your account, then{" "}
             <Link to="/login">log in</Link>.
           </p>
+          {devVerifyUrl && (
+            <p style={{ marginTop: "1rem", padding: "0.75rem", background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 4 }}>
+              <span style={{ fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-dim)" }}>Dev mode (no email sent — click to verify)</span>
+              <br />
+              <a href={devVerifyUrl} className="support-link">
+                {devVerifyUrl}
+              </a>
+            </p>
+          )}
         </div>
       </div>
     );
