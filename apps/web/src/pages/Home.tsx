@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api, mediaUrl } from "../api";
 import type { ApiArtist, ApiTrack } from "../types";
 import { usePlayerStore } from "../store/player";
+import { useAuth } from "../auth";
 import { TrackRow } from "../components/TrackRow";
 import { TrackCard } from "../components/TrackCard";
 import { clampText } from "../utils/text";
@@ -26,6 +27,8 @@ export function Home() {
     return () => clearInterval(id);
   }, []);
 
+  const { user } = useAuth();
+  const [myArtists, setMyArtists] = useState<ApiArtist[]>([]);
   const [artists, setArtists] = useState<ApiArtist[]>([]);
   const [tracks, setTracks] = useState<ApiTrack[]>([]);
   const [trending, setTrending] = useState<ApiTrack[]>([]);
@@ -36,6 +39,11 @@ export function Home() {
   const playTrack = usePlayerStore((s) => s.playTrack);
 
   useEffect(() => {
+    if (user) {
+      // My artists (user's ask): the artists I created, fetched separately
+      // so they're visible at the top of Home the moment I log in.
+      api.myArtists().then((d) => setMyArtists(d.artists)).catch(() => {});
+    }
     api.artists().then((d) => setArtists(d.artists));
     api.tracks().then((d) => setTracks(d.tracks));
     api.tracks({ sort: "trending" }).then((d) => setTrending(d.tracks.slice(0, 10)));
@@ -58,6 +66,32 @@ export function Home() {
   return (
     <div>
       <h1 className="page-greeting">{greeting(hour)}</h1>
+
+      {/* Your artists (user's ask): the profiles I created, front and
+          center so I can reach my own uploads instantly. Hidden for
+          anonymous visitors; the general AI Artists grid follows. */}
+      {user && myArtists.length > 0 && (
+        <>
+          <div className="section-head">
+            <h2 className="section-title">Your artists</h2>
+          </div>
+          <div className="card-grid">
+            {myArtists.map((artist) => (
+              <Link key={artist.id} className="card" to={`/artist/${artist.id}`}>
+                <div className="card-art-wrap">
+                  {artist.avatarPath ? (
+                    <img className="card-art artist-art" src={mediaUrl(artist.avatarPath)!} alt={artist.name} />
+                  ) : (
+                    <div className="card-art artist-art">🤖</div>
+                  )}
+                </div>
+                <div className="card-title">{artist.name}</div>
+                <div className="card-sub">{artist.aiModel}</div>
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
 
       <div className="section-head">
         <h2 className="section-title">AI Artists</h2>

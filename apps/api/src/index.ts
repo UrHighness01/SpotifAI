@@ -62,12 +62,16 @@ const authLimiter = rateLimit({
 
 // Looser than auth (mutating writes, not credential guesses) but still bounded
 // so a single account can't be scripted into hammering the API or the disk.
+// skipFailedRequests: rejected requests (429) don't consume quota — otherwise
+// a flapping client clicks like → 429 → clicks again → 429... and locks
+// itself out for the whole window (the "like bug" coming back).
 const writeLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 60,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: rateLimitKey,
+  skipFailedRequests: true,
 });
 
 const uploadLimiter = rateLimit({
@@ -76,6 +80,7 @@ const uploadLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: rateLimitKey,
+  skipFailedRequests: true,
 });
 
 // Tighter than authLimiter: these two send mail, so an unbounded caller can

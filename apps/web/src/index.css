@@ -297,6 +297,11 @@ img.card-art {
 }
 
 /* Like (heart) button — on cards + player */
+.like-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
 .like-btn {
   background: none;
   border: none;
@@ -312,6 +317,23 @@ img.card-art {
 }
 .like-btn:hover { color: var(--text); transform: scale(1.1); }
 .like-btn.liked { color: var(--accent); }
+/* Transient error toast when a like fails (rate limit / offline / 401) —
+   the store already rolled the heart back, so explain why instead of
+   looking like the "like bug" again. */
+.like-error {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 50;
+  background: var(--bg-card);
+  border: 1px solid #f15e6c;
+  color: #f15e6c;
+  font-size: 0.72rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
 .like-btn-on-card {
   position: absolute;
   top: 8px;

@@ -7,6 +7,11 @@ import { api } from "../api";
 interface LibraryState {
   savedIds: Set<string>;
   loaded: boolean;
+  // Tracks with an in-flight save/unsave — guards against the rapid-click
+  // double-toggle race (click → optimistic flip → second click before the
+  // first resolves flips it back and fires a conflicting request, which
+  // read as "likes and auto-unlikes rapidly").
+  inflight: Set<string>;
   load: () => Promise<void>;
   isSaved: (trackId: string) => boolean;
   toggle: (trackId: string) => Promise<void>;
@@ -15,6 +20,7 @@ interface LibraryState {
 export const useLibraryStore = create<LibraryState>((set, get) => ({
   savedIds: new Set(),
   loaded: false,
+  inflight: new Set(),
 
   load: async () => {
     if (get().loaded) return;
@@ -30,13 +36,17 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   isSaved: (trackId) => get().savedIds.has(trackId),
 
   toggle: async (trackId) => {
+    // Ignore clicks while a request for this track is already in flight —
+    // otherwise rapid clicking fires overlapping save/unsave pairs that
+    // flip the heart back and forth (the "like bug").
+    if (get().inflight.has(trackId)) return;
     const saved = get().savedIds;
     const wasSaved = saved.has(trackId);
     // Optimistic flip.
     const next = new Set(saved);
     if (wasSaved) next.delete(trackId);
     else next.add(trackId);
-    set({ savedIds: next });
+    set({ savedIds: next, inflight: new Set(get().inflight).add(trackId) });
     try {
       if (wasSaved) await api.unsaveTrack(trackId);
       else await api.saveTrack(trackId);
@@ -47,6 +57,10 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
       else rollback.delete(trackId);
       set({ savedIds: rollback });
       throw new Error("Could not update liked songs — are you logged in?");
+    } finally {
+      const inflight = new Set(get().inflight);
+      inflight.delete(trackId);
+      set({ inflight });
     }
   },
 }));

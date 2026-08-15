@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLibraryStore } from "../store/library";
 import { useAuth } from "../auth";
@@ -14,6 +14,7 @@ export function LikeButton({ trackId, className = "" }: { trackId: string; class
   const loaded = useLibraryStore((s) => s.loaded);
   const isSaved = useLibraryStore((s) => s.isSaved(trackId));
   const toggle = useLibraryStore((s) => s.toggle);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     load();
@@ -26,24 +27,32 @@ export function LikeButton({ trackId, className = "" }: { trackId: string; class
       navigate("/login");
       return;
     }
+    setError(null);
     try {
       await toggle(trackId);
-    } catch {
-      /* error surfaced via optimistic rollback; ignore here */
+    } catch (err) {
+      // Surface failures (rate limit, offline, 401) instead of silently
+      // rolling back — the heart reverting with no explanation read as the
+      // "like bug". The store already rolled the optimistic state back.
+      setError(err instanceof Error ? err.message : "Could not update like");
+      setTimeout(() => setError(null), 2500);
     }
   };
 
   return (
-    <button
-      className={`like-btn${isSaved ? " liked" : ""} ${className}`}
-      onClick={onClick}
-      aria-label={isSaved ? "Remove from liked songs" : "Add to liked songs"}
-      title={isSaved ? "Remove from liked songs" : "Add to liked songs"}
-    >
-      <svg viewBox="0 0 24 24" width="18" height="18" fill={isSaved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" aria-hidden="true">
-        <path d="M12 21s-6.7-4.3-9.3-8.1C.8 10.2 1.5 6.6 4.4 5.3c2-.9 4.2-.3 5.6 1.3L12 8.8l2-2.2c1.4-1.6 3.6-2.2 5.6-1.3 2.9 1.3 3.6 4.9 1.7 7.6C18.7 16.7 12 21 12 21z" />
-      </svg>
-      {loaded === false ? "" : null}
-    </button>
+    <span className="like-wrap">
+      <button
+        className={`like-btn${isSaved ? " liked" : ""} ${className}`}
+        onClick={onClick}
+        aria-label={isSaved ? "Remove from liked songs" : "Add to liked songs"}
+        title={isSaved ? "Remove from liked songs" : "Add to liked songs"}
+      >
+        <svg viewBox="0 0 24 24" width="18" height="18" fill={isSaved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" aria-hidden="true">
+          <path d="M12 21s-6.7-4.3-9.3-8.1C.8 10.2 1.5 6.6 4.4 5.3c2-.9 4.2-.3 5.6 1.3L12 8.8l2-2.2c1.4-1.6 3.6-2.2 5.6-1.3 2.9 1.3 3.6 4.9 1.7 7.6C18.7 16.7 12 21 12 21z" />
+        </svg>
+        {loaded === false ? "" : null}
+      </button>
+      {error && <span className="like-error">{error}</span>}
+    </span>
   );
 }

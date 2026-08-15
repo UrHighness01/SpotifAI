@@ -71,18 +71,26 @@ export function PlayerBar() {
 
   // Nano on-device blurb + mood/energy tags for the current track (John's
   // next-ideas #5 + #4): the generated "what this is" line and offline
-  // vibe tags in the player, desktop-only, graceful.
+  // vibe tags in the player, desktop-only, graceful. The blurb is skipped
+  // when the generator wasn't disclosed — the tiny model fabricates a
+  // "made with X" description from nothing (user-reported wrong info), so
+  // no blurb is more honest than a hallucinated one. Tags are a
+  // deterministic keyword classifier and stay.
   useEffect(() => {
     setNanoBlurb(null);
     setNanoTags(null);
     const desktop = window.spotifaiDesktop;
     if (desktop?.nanoDescribe && desktop?.nanoTags && track) {
-      desktop
-        .nanoDescribe({ title: track.title, aiModel: track.aiModel, genre: track.album?.title, prompt: track.aiPrompt })
-        .then((res) => {
-          if (res.ok && res.blurb) setNanoBlurb(res.blurb);
-        })
-        .catch(() => {});
+      const model = (track.aiModel || "").trim().toLowerCase();
+      const disclosed = model && model !== "unknown";
+      if (disclosed) {
+        desktop
+          .nanoDescribe({ title: track.title, aiModel: track.aiModel, genre: track.album?.title, prompt: track.aiPrompt })
+          .then((res) => {
+            if (res.ok && res.blurb) setNanoBlurb(res.blurb);
+          })
+          .catch(() => {});
+      }
       desktop
         .nanoTags({ title: track.title, aiModel: track.aiModel, genre: track.album?.title, prompt: track.aiPrompt })
         .then((res) => {

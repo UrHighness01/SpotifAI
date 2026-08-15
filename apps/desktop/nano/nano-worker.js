@@ -51,11 +51,46 @@ function ensureEngine() {
   });
 }
 
+// Known generator names — used to strip hallucinated "made with X" claims
+// from blurbs. The tiny model tends to echo "generated with suno v3.5" even
+// when the declared model is different or absent — false info on a platform
+// whose whole brand is honest disclosure. Generator attribution lives in the
+// track's aiModel field (shown separately); the blurb's job is vibe only.
+const KNOWN_GENERATORS = ["suno", "udio", "riffusion", "boomy", "soundraw", "aiva"];
+
+// Remove "made with/generated with/using <generator>" phrases so the blurb
+// can never claim a tool the uploader didn't name (or contradict the
+// declared aiModel). Returns "" when nothing meaningful survives.
+function stripGeneratorClaims(blurb) {
+  let out = String(blurb || "")
+    // Phrase removal: stop at a comma, semicolon, pipe, or end-of-string —
+    // NOT a period ('.' inside "v3.5" must not end the match early).
+    .replace(/\b(made|generated|created|produced)\s+(with|by|using)\s+[\w.\- ]+?(?=[,;|]|$)/gi, "")
+    .replace(/\busing\s+[\w.\- ]+?(?=[,;|]|$)/gi, "");
+  for (const g of KNOWN_GENERATORS) {
+    // Remove the bare name, with or without a version suffix ("suno",
+    // "suno v3", "suno v3.5", "udio 2.0").
+    out = out.replace(new RegExp(`\\b${g}(?:\\s*v?[\\d.]+)?\\b`, "gi"), "");
+  }
+  out = out
+    .replace(/\s*,\s*,/g, ",")
+    .replace(/\s*,\s*/g, ", ")
+    .replace(/,?\s+[.|]/g, ".")
+    .replace(/\s{2,}/g, " ")
+    .replace(/^[\s,.]+|[\s,.]+$/g, "")
+    .trim();
+  return out;
+}
+
 function buildPrompt(track) {
   const head = [
     `title: ${truncate(track.title).toLowerCase()}`,
-    `aimodel: ${truncate(track.aiModel || "unknown").toLowerCase()}`,
+    // Only include the generator when it was actually disclosed — feeding
+    // "unknown" makes the tiny model hallucinate a specific tool (suno),
+    // which the uploader never claimed.
   ];
+  const model = String(track.aiModel || "").toLowerCase().trim();
+  if (model && model !== "unknown") head.push(`aimodel: ${truncate(model)}`);
   if (track.genre) head.push(`genre: ${truncate(track.genre).toLowerCase()}`);
   if (track.prompt) head.push(`prompt: ${truncate(track.prompt).toLowerCase()}`);
   return `${head.join(" | ")} | blurb: `;
@@ -153,7 +188,8 @@ function pump() {
 process.on("message", async (msg) => {
   if (msg && msg.type === "generate" && msg.track) {
     try {
-      const blurb = await request(buildPrompt(msg.track));
+      let blurb = await request(buildPrompt(msg.track));
+      blurb = stripGeneratorClaims(blurb);
       process.send({ type: "blurb", id: msg.id, blurb });
     } catch (err) {
       process.send({ type: "error", id: msg.id, error: err.message });
