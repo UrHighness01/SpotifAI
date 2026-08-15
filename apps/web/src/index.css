@@ -414,6 +414,7 @@ img.card-art {
 }
 .rights-badge.public-domain { border-color: var(--accent); color: var(--accent); }
 .rights-badge.cc-by, .rights-badge.cc-by-sa, .rights-badge.cc-by-nc { border-color: #2f6b4f; color: var(--accent); }
+.rights-badge.provenance { border-color: var(--accent); color: var(--accent); }
 .ai-rights-select {
   background: var(--bg-card);
   border: 1px solid var(--border);

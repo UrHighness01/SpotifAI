@@ -30,6 +30,9 @@ export interface ApiTrack {
   rightsNotice: string;
   remixOfId: string | null;
   remixOf?: ApiTrack | null;
+  fingerprintHash: string | null;
+  fingerprintModel: string | null;
+  fingerprintCapturedAt: string | null;
   playCount: number;
   createdAt: string;
   artist?: ApiArtist;

@@ -6,6 +6,7 @@ import { randomUUID } from "crypto";
 import { prisma } from "../db";
 import { requireAuth, AuthedRequest } from "../middleware/auth";
 import { writeCover } from "../lib/cover-art";
+import { fingerprintAudio } from "../lib/fingerprint";
 
 const router = Router();
 
@@ -115,6 +116,10 @@ router.post(
       album = await prisma.album.create({ data: { title, artistId } });
     }
 
+    // Provenance fingerprint (John's next-ideas #6): recorded immutably at
+    // upload so the audio+metadata can never be silently swapped later.
+    const fingerprint = fingerprintAudio(audioFile.path, { aiModel, title });
+
     const track = await prisma.track.create({
       data: {
         title,
@@ -126,6 +131,9 @@ router.post(
         aiPrompt: aiPrompt || undefined,
         aiGenerationNotes: aiGenerationNotes || undefined,
         rightsNotice: rightsNotice || "all-rights-reserved",
+        fingerprintHash: fingerprint?.hash,
+        fingerprintModel: fingerprint?.model,
+        fingerprintCapturedAt: fingerprint ? new Date() : undefined,
       },
     });
 

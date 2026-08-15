@@ -61,6 +61,9 @@ model Track {
   remixOfId           String?
   remixOf             Track?  @relation("RemixChain", fields: [remixOfId], references: [id])
   remixes             Track[] @relation("RemixChain")
+  fingerprintHash     String?
+  fingerprintModel    String?
+  fingerprintCapturedAt DateTime?
   playCount           Int           @default(0)
   createdAt           DateTime      @default(now())
   album               Album?        @relation(fields: [albumId], references: [id])

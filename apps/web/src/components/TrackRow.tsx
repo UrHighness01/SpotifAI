@@ -101,6 +101,16 @@ export function TrackRow({ track, index, queue, onMetaChange }: Props) {
                   </span>
                 </div>
               )}
+              {/* Provenance fingerprint (John's next-ideas #6): recorded
+                  immutably at upload — the 'we can prove it' layer. */}
+              {track.fingerprintHash && (
+                <div>
+                  <span className="ai-detail-label">Provenance:</span>{" "}
+                  <span className={`rights-badge provenance`} title={`Fingerprint ${track.fingerprintHash} captured at upload`}>
+                    ✓ fingerprint {track.fingerprintHash}
+                  </span>
+                </div>
+              )}
               {/* Generation-notes annex (John idea #8): owner edits the
                   disclosure metadata in place. */}
               <button className="ai-edit-btn" onClick={() => setEditing(true)}>
