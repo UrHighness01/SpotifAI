@@ -56,6 +56,36 @@ export function Artist() {
           <TrackRow key={track.id} track={{ ...track, artist }} index={i} queue={artist.tracks.map((t) => ({ ...t, artist }))} />
         ))}
       </div>
+
+      {/* "How I made this" recipe library (John's next-ideas #3): since the
+          artist IS the uploader, their generation recipes are a discovery
+          surface — fans of one track can see everything made by the same
+          method. Structured from aiModel/aiPrompt/aiGenerationNotes. */}
+      {artist.tracks.some((t) => t.aiPrompt || t.aiGenerationNotes) && (
+        <div style={{ marginTop: "2.5rem" }}>
+          <h2>How this was made</h2>
+          {artist.tracks
+            .filter((t) => t.aiPrompt || t.aiGenerationNotes)
+            .map((track) => (
+              <div key={track.id} className="recipe-card">
+                <div className="recipe-title">{track.title}</div>
+                <div className="recipe-row">
+                  <span className="ai-detail-label">Model</span> {track.aiModel}
+                </div>
+                {track.aiPrompt && (
+                  <div className="recipe-row">
+                    <span className="ai-detail-label">Prompt</span> {track.aiPrompt}
+                  </div>
+                )}
+                {track.aiGenerationNotes && (
+                  <div className="recipe-row">
+                    <span className="ai-detail-label">Notes</span> {track.aiGenerationNotes}
+                  </div>
+                )}
+              </div>
+            ))}
+        </div>
+      )}
     </div>
   );
 }

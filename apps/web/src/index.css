@@ -388,6 +388,20 @@ img.card-art {
   gap: 0.5rem;
 }
 
+/* "How this was made" recipe cards (Artist page) */
+.recipe-card {
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+  border-radius: 4px;
+  padding: 0.7rem 0.9rem;
+  margin-bottom: 0.6rem;
+  display: grid;
+  gap: 0.3rem;
+}
+.recipe-title { font-weight: 500; font-size: 0.9rem; }
+.recipe-row { font-size: 0.85rem; color: var(--text-dim); }
+
 /* Owner-scoped cover upload (Album page) */
 .cover-upload {
   display: inline-block;
