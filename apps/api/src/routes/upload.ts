@@ -136,6 +136,10 @@ router.post(
         fingerprintHash: fingerprint?.hash,
         fingerprintModel: fingerprint?.model,
         fingerprintCapturedAt: fingerprint ? new Date() : undefined,
+        // Tier C infra: the perceptual fingerprint is stored now so a
+        // generator-signature matcher is *possible* later — label stays
+        // 'recorded' until matching exists (never a binary 'verified').
+        perceptualHash: fingerprint?.perceptual,
         // Honest label (John's Tier 3 + his review finding): 'recorded' is
         // set ONLY when a fingerprint was actually captured. Explicit null
         // (not undefined) when capture failed — otherwise Prisma falls back

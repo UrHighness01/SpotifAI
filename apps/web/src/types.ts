@@ -38,6 +38,7 @@ export interface ApiTrack {
   fingerprintHash: string | null;
   fingerprintModel: string | null;
   fingerprintCapturedAt: string | null;
+  perceptualHash: string | null;
   provenanceStatus: string | null;
   playCount: number;
   createdAt: string;

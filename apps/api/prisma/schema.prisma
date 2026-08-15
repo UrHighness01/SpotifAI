@@ -81,6 +81,7 @@ model Track {
   fingerprintHash     String?
   fingerprintModel    String?
   fingerprintCapturedAt DateTime?
+  perceptualHash      String?
   provenanceStatus    String? @default("recorded")
   playCount           Int           @default(0)
   createdAt           DateTime      @default(now())
