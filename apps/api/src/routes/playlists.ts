@@ -24,9 +24,25 @@ router.get("/:id", requireAuth, async (req: AuthedRequest, res) => {
 });
 
 router.post("/", requireAuth, async (req: AuthedRequest, res) => {
-  const { name } = req.body || {};
+  const { name, trackIds } = req.body || {};
   if (!name) return res.status(400).json({ error: "name is required" });
-  const playlist = await prisma.playlist.create({ data: { name, userId: req.userId! } });
+  // Optional initial tracks (bulk create from the Liked Songs selection):
+  // validate all exist, then create the playlist with them in one go so the
+  // "create playlist from selection" flow is a single round-trip.
+  const ids: string[] = Array.isArray(trackIds) ? trackIds.slice(0, 500) : [];
+  if (ids.length) {
+    const found = await prisma.track.count({ where: { id: { in: ids } } });
+    if (found !== ids.length) {
+      return res.status(400).json({ error: "some trackIds do not exist" });
+    }
+  }
+  const playlist = await prisma.playlist.create({
+    data: {
+      name,
+      userId: req.userId!,
+      ...(ids.length ? { tracks: { create: ids.map((trackId, i) => ({ trackId, position: i })) } } : {}),
+    },
+  });
   res.status(201).json({ playlist });
 });
 

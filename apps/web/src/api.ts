@@ -100,7 +100,8 @@ export const api = {
 
   playlists: () => request("/playlists"),
   playlist: (id: string) => request(`/playlists/${id}`),
-  createPlaylist: (name: string) => request("/playlists", { method: "POST", body: JSON.stringify({ name }) }),
+  createPlaylist: (name: string, trackIds?: string[]) =>
+    request("/playlists", { method: "POST", body: JSON.stringify({ name, trackIds }) }),
   deletePlaylist: (id: string) => request(`/playlists/${id}`, { method: "DELETE" }),
   addToPlaylist: (playlistId: string, trackId: string) =>
     request(`/playlists/${playlistId}/tracks`, { method: "POST", body: JSON.stringify({ trackId }) }),

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { usePlayerStore } from "../store/player";
 import { AddToPlaylist } from "./AddToPlaylist";
+import { LikeButton } from "./LikeButton";
 import { api } from "../api";
 import { clampText } from "../utils/text";
 import type { ApiTrack } from "../types";
@@ -10,9 +11,14 @@ interface Props {
   index: number;
   queue: ApiTrack[];
   onMetaChange?: (trackId: string, meta: { aiPrompt?: string | null; aiGenerationNotes?: string | null; rightsNotice?: string }) => void;
+  // Selection mode (Liked Songs page): modifier-click toggles/range-selects
+  // instead of playing, so users can bulk-create a playlist from a pick.
+  selectable?: boolean;
+  selected?: boolean;
+  onToggleSelect?: (e: React.MouseEvent) => void;
 }
 
-export function TrackRow({ track, index, queue, onMetaChange }: Props) {
+export function TrackRow({ track, index, queue, onMetaChange, selectable, selected, onToggleSelect }: Props) {
   const playTrack = usePlayerStore((s) => s.playTrack);
   const [showAi, setShowAi] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -46,10 +52,22 @@ export function TrackRow({ track, index, queue, onMetaChange }: Props) {
     }
   };
 
+  // Selection mode: ctrl/cmd toggles one row, shift range-selects from the
+  // last anchor (handled by the parent via lastSelected). Plain clicks still
+  // play so browsing the list never loses its core action.
+  const onRowClick = (e: React.MouseEvent) => {
+    if (selectable && (e.ctrlKey || e.metaKey || e.shiftKey)) {
+      e.preventDefault();
+      onToggleSelect?.(e);
+      return;
+    }
+    playTrack(track, queue);
+  };
+
   return (
     <>
-      <div className="track-row" onClick={() => playTrack(track, queue)}>
-        <span className="idx">{index + 1}</span>
+      <div className={`track-row${selected ? " selected" : ""}`} onClick={onRowClick}>
+        <span className="idx">{selected ? "✓" : index + 1}</span>
         <div>
           <div className="title">{track.title}</div>
           <div className="artist">{track.artist?.name || "Unknown artist"}</div>
@@ -68,6 +86,10 @@ export function TrackRow({ track, index, queue, onMetaChange }: Props) {
             ⓘ
           </button>
         )}
+        {/* Heart on every row (Liked Songs request): unlike directly from
+            the list — the shared library store optimistically removes it,
+            and pages filtering by the store disappear the row live. */}
+        <LikeButton trackId={track.id} className="like-btn-on-row" />
         <AddToPlaylist trackId={track.id} />
       </div>
       {showAi && (

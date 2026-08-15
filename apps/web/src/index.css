@@ -359,7 +359,7 @@ img.card-art {
 
 .track-row {
   display: grid;
-  grid-template-columns: 32px 1fr auto auto auto;
+  grid-template-columns: 32px 1fr auto auto auto auto;
   gap: 1rem;
   align-items: center;
   padding: 0.5rem 0.75rem;
@@ -367,9 +367,65 @@ img.card-art {
   cursor: pointer;
 }
 .track-row:hover { background: var(--bg-panel-raised); }
+.track-row.selected { background: var(--bg-panel-raised); box-shadow: inset 3px 0 0 var(--accent); }
+.track-row.selected .idx { color: var(--accent); font-weight: 700; }
 .track-row .idx { color: var(--text-dim); font-size: 0.85rem; }
 .track-row .title { font-weight: 500; }
 .track-row .artist { color: var(--text-dim); font-size: 0.85rem; }
+
+/* Heart inside track rows (Liked Songs list + everywhere rows appear) */
+.like-btn-on-row { padding: 0.15rem; }
+
+/* Selection bar (Liked Songs): bulk-select then create a playlist inline */
+.selection-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.6rem 0.9rem;
+  margin-bottom: 0.75rem;
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+}
+.selection-count {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.selection-create {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+.selection-create input {
+  flex: 1;
+  min-width: 160px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.5rem 0.9rem;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+.selection-create .selection-create-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.selection-create-btn:disabled { opacity: 0.5; cursor: default; }
+.selection-cancel {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.selection-cancel:hover { color: var(--text); }
 
 /* Honest AI disclosure toggle + panel (TrackRow) */
 .ai-detail-toggle {
