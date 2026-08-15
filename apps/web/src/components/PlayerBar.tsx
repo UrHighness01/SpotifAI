@@ -2,6 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../store/player";
 import { api, mediaUrl } from "../api";
 
+declare global {
+  interface Window {
+    spotifaiDesktop?: {
+      isDesktop: boolean;
+      nanoDescribe?: (track: unknown) => Promise<{ ok: boolean; blurb?: string; error?: string }>;
+    };
+  }
+}
+
 function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds)) return "0:00";
   const m = Math.floor(seconds / 60);
@@ -15,8 +24,24 @@ export function PlayerBar() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.8);
+  const [nanoBlurb, setNanoBlurb] = useState<string | null>(null);
 
   const track = currentIndex >= 0 ? queue[currentIndex] : null;
+
+  // Nano on-device blurb for the current track (John's next-ideas #5): the
+  // generated "what this is" line in the player, desktop-only, graceful.
+  useEffect(() => {
+    setNanoBlurb(null);
+    const desktop = window.spotifaiDesktop;
+    if (desktop?.nanoDescribe && track) {
+      desktop
+        .nanoDescribe({ title: track.title, aiModel: track.aiModel, genre: track.album?.title })
+        .then((res) => {
+          if (res.ok && res.blurb) setNanoBlurb(res.blurb);
+        })
+        .catch(() => {});
+    }
+  }, [track?.id]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -83,6 +108,10 @@ export function PlayerBar() {
               <span className="prompt-echo-label">{track.aiModel}:</span> “{track.aiPrompt}”
             </div>
           )}
+          {/* Nano on-device blurb (John's next-ideas #5): the generated
+              "what this is" line, desktop-only, honest counterpoint to the
+              cold prompt text. */}
+          {nanoBlurb && <div className="prompt-echo">{nanoBlurb}</div>}
         </div>
       </div>
 
