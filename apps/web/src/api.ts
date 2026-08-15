@@ -87,6 +87,12 @@ export const api = {
   unfollowArtist: (artistId: string) => request(`/follows/${artistId}`, { method: "DELETE" }),
   followFeed: () => request("/follows/feed"),
 
+  collabRequests: () => request("/collabs/mine"),
+  requestRemix: (trackId: string, message?: string) =>
+    request(`/collabs/track/${trackId}/request`, { method: "POST", body: JSON.stringify({ message }) }),
+  respondCollab: (id: string, status: "accepted" | "rejected") =>
+    request(`/collabs/${id}`, { method: "PATCH", body: JSON.stringify({ status }) }),
+
   upload: (formData: FormData) => request("/upload/track", { method: "POST", body: formData }),
 
   playlists: () => request("/playlists"),

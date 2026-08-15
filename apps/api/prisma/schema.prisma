@@ -24,6 +24,7 @@ model User {
   artists                   Artist[]
   follows                   Follow[]
   attestations              Attestation[]
+  collabRequests            CollabRequest[]
 }
 
 model Attestation {
@@ -37,6 +38,19 @@ model Attestation {
   track     Track    @relation(fields: [trackId], references: [id])
 
   @@unique([userId, trackId])
+}
+
+model CollabRequest {
+  id          String   @id @default(cuid())
+  requesterId String
+  trackId     String
+  message     String?
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+  requester   User     @relation(fields: [requesterId], references: [id])
+  track       Track    @relation(fields: [trackId], references: [id])
+
+  @@unique([requesterId, trackId])
 }
 
 model Artist {
@@ -104,6 +118,7 @@ model Track {
   playlistTracks      PlaylistTrack[]
   librarySaves        LibrarySave[]
   attestations        Attestation[]
+  collabRequests      CollabRequest[]
 }
 
 model Playlist {

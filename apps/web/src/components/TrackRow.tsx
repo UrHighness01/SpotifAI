@@ -165,6 +165,9 @@ export function TrackRow({ track, index, queue, onMetaChange }: Props) {
                   fingerprint. The platform records; the community adds
                   credibility. */}
               <AttestSection track={track} />
+              {/* Collab request (John's #4 social tier): 'can I remix
+                  this?' — flows through the no-label community graph. */}
+              <CollabRequestButton track={track} />
               {/* Generation-notes annex (John idea #8): owner edits the
                   disclosure metadata in place. */}
               <button className="ai-edit-btn" onClick={() => setEditing(true)}>
@@ -274,6 +277,59 @@ function AttestSection({ track }: { track: ApiTrack }) {
       )}
       {done && <div style={{ fontSize: "0.8rem", color: "var(--accent)" }}>✓ Attested — thanks for helping verify provenance.</div>}
       {error && <div style={{ fontSize: "0.78rem", color: "var(--flag, #a13a2e)" }}>{error}</div>}
+    </div>
+  );
+}
+
+// Collab request button (John's #4 social tier): ask the uploader 'can I
+// remix this?'. Metadata-only, honor-system, deepens the no-label
+// community without provenance-claim risk.
+function CollabRequestButton({ track }: { track: ApiTrack }) {
+  const [open, setOpen] = useState(false);
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const send = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api.requestRemix(track.id, message.trim() || undefined);
+      setDone(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "request failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div style={{ marginTop: "0.3rem" }}>
+      {!done ? (
+        !open ? (
+          <button className="ai-edit-btn" onClick={() => setOpen(true)}>
+            Request to remix this
+          </button>
+        ) : (
+          <div className="ai-edit-form">
+            <label className="ai-detail-label">Message to the uploader (optional)</label>
+            <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={2} maxLength={500} />
+            {error && <div style={{ fontSize: "0.78rem", color: "var(--flag, #a13a2e)" }}>{error}</div>}
+            <div className="ai-edit-actions">
+              <button className="ai-edit-btn" onClick={send} disabled={busy}>
+                {busy ? "Sending…" : "Send request"}
+              </button>
+              <button className="ai-edit-btn" onClick={() => setOpen(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )
+      ) : (
+        <div style={{ fontSize: "0.8rem", color: "var(--accent)" }}>✓ Remix request sent to the uploader.</div>
+      )}
     </div>
   );
 }
