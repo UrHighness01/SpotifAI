@@ -53,6 +53,9 @@ export const api = {
     const s = qs.toString();
     return request(`/artists${s ? `?${s}` : ""}`);
   },
+  // Only artists I created — upload attribution must stay within my own
+  // profiles (the upload picker uses this, not the public list).
+  myArtists: () => request("/artists/mine"),
   artist: (id: string) => request(`/artists/${id}`),
   updateArtistPayout: (id: string, payout: { payoutKind?: string | null; payoutHandle?: string | null }) =>
     request(`/artists/${id}/payout`, { method: "PATCH", body: JSON.stringify(payout) }),
@@ -94,6 +97,8 @@ export const api = {
     request(`/collabs/track/${trackId}/request`, { method: "POST", body: JSON.stringify({ message }) }),
   respondCollab: (id: string, status: "accepted" | "rejected") =>
     request(`/collabs/${id}`, { method: "PATCH", body: JSON.stringify({ status }) }),
+  // Batch upload (multiple tracks, one artist, optional shared album).
+  uploadBatch: (formData: FormData) => request("/upload/tracks", { method: "POST", body: formData }),
   corpusStatus: () => request("/corpus/status"),
 
   upload: (formData: FormData) => request("/upload/track", { method: "POST", body: formData }),

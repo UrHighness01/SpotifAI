@@ -23,6 +23,19 @@ router.get("/", async (req, res) => {
   res.json({ artists });
 });
 
+// My artists (upload attribution): only profiles I own. When uploading, a
+// user must attribute tracks to an artist they created — never someone
+// else's. The upload routes also 403 on foreign artists, but the picker
+// shouldn't even offer them. MUST be defined before /:id (same single-segment
+// shape). First upload always has an empty list → create your artist.
+router.get("/mine", requireAuth, async (req: AuthedRequest, res) => {
+  const artists = await prisma.artist.findMany({
+    where: { ownerId: req.userId! },
+    orderBy: { createdAt: "desc" },
+  });
+  res.json({ artists });
+});
+
 // The published public key (Tier G #1): a stable, fetch-independent place
 // for anyone to get the key that verifies provenance signatures — so the
 // claim is verifiable even if a specific manifest link changes. MUST be

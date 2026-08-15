@@ -867,6 +867,34 @@ img.card-art {
   font-weight: 700;
   font-size: 0.9rem;
 }
+.upload-form .btn-primary:disabled { opacity: 0.5; cursor: default; }
+
+/* Batch upload: per-file title rows */
+.batch-files {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem;
+}
+.batch-file-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 0.5rem;
+  align-items: center;
+}
+.batch-file-name {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.batch-file-row input {
+  font-size: 0.85rem;
+  padding: 0.45rem 0.7rem;
+}
 
 .save-btn {
   background: none;
