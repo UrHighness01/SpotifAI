@@ -26,6 +26,7 @@ export function Home() {
   const [recommended, setRecommended] = useState<ApiTrack[]>([]);
   const [followFeed, setFollowFeed] = useState<ApiTrack[]>([]);
   const [verifiable, setVerifiable] = useState<ApiTrack[]>([]);
+  const [signatureMatched, setSignatureMatched] = useState<ApiTrack[]>([]);
   const playTrack = usePlayerStore((s) => s.playTrack);
 
   useEffect(() => {
@@ -42,6 +43,10 @@ export function Home() {
     // a RECORDED fingerprint — un-gameable (a track either has one or not),
     // honestly scoped as 'recorded', not independently corroborated.
     api.tracks({ fingerprinted: true }).then((d) => setVerifiable(d.tracks));
+    // Signature-confirmed tier (slice 71 — the capstone payoff): tracks whose
+    // provenance is independently validated against the generator-signature
+    // corpus — the honest ladder's highest rung.
+    api.tracks({ signatureMatched: true }).then((d) => setSignatureMatched(d.tracks));
   }, []);
 
   return (
@@ -142,6 +147,39 @@ export function Home() {
                     </div>
                   </div>
                 )}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Signature-confirmed tier (slice 71 — the capstone payoff): tracks
+          whose provenance is independently validated against the
+          generator-signature corpus — the honest ladder's highest rung,
+          above 'recorded'. */}
+      {signatureMatched.length > 0 && (
+        <>
+          <div className="section-head">
+            <h2 className="section-title">Signature-confirmed</h2>
+          </div>
+          <p style={{ color: "var(--text-dim)", fontSize: "0.85rem", marginBottom: "0.6rem" }}>
+            Tracks whose audio fingerprint was independently validated against the generator-signature corpus — not just recorded, confirmed.
+          </p>
+          <div className="card-grid">
+            {signatureMatched.map((track) => (
+              <div key={track.id} className="card" onClick={() => playTrack(track, signatureMatched)}>
+                <div className="card-art-wrap">
+                  {track.album?.coverPath ? (
+                    <img className="card-art" src={mediaUrl(track.album.coverPath)!} alt={track.title} />
+                  ) : (
+                    <div className="card-art" />
+                  )}
+                  <button className="card-play-btn" aria-label={`Play ${track.title}`}>
+                    <PlayIcon />
+                  </button>
+                </div>
+                <div className="card-title">{track.title}</div>
+                <div className="card-sub">{track.artist?.name}</div>
               </div>
             ))}
           </div>

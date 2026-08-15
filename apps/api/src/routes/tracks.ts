@@ -99,6 +99,10 @@ router.get("/", async (req, res) => {
   // counts (sybil-inflatable until anti-sybil exists). 'verifiably honest'
   // in scope: the origin is recorded, not independently corroborated yet.
   const fingerprinted = req.query.fingerprinted === "true";
+  // Signature-matched tier (slice 71 — the capstone payoff): tracks whose
+  // provenance is signature-CONFIRMED (independently validated against the
+  // generator-signature corpus), a higher rung than 'recorded'.
+  const signatureMatched = req.query.signatureMatched === "true";
   const tracks = await prisma.track.findMany({
     where: {
       ...(q
@@ -113,6 +117,7 @@ router.get("/", async (req, res) => {
       ...(albumId ? { albumId } : {}),
       ...(aiModel ? { aiModel } : {}),
       ...(fingerprinted ? { fingerprintHash: { not: null } } : {}),
+      ...(signatureMatched ? { provenanceStatus: "signature-matched" } : {}),
     },
     include: TRACK_INCLUDE,
     orderBy: sort === "trending" ? { playCount: "desc" } : { createdAt: "desc" },
