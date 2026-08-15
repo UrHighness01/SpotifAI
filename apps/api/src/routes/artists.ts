@@ -1,5 +1,8 @@
-import { Router } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import path from "path";
+import fs from "fs";
+import { randomUUID } from "crypto";
+import multer from "multer";
 import { prisma } from "../db";
 import { requireAuth, AuthedRequest } from "../middleware/auth";
 import { writeCover } from "../lib/cover-art";
@@ -9,6 +12,34 @@ const router = Router();
 
 const STORAGE_ROOT = path.resolve(__dirname, "../../../../storage");
 const AVATAR_DIR = path.join(STORAGE_ROOT, "avatars");
+const BANNER_DIR = path.join(STORAGE_ROOT, "banners");
+fs.mkdirSync(AVATAR_DIR, { recursive: true });
+fs.mkdirSync(BANNER_DIR, { recursive: true });
+
+// Same image validation as album covers — mimetype allowlist, extension
+// derived from the validated mimetype (never the client filename).
+const IMAGE_EXT_BY_MIME: Record<string, string> = {
+  "image/png": ".png",
+  "image/jpeg": ".jpg",
+  "image/webp": ".webp",
+};
+
+const imageUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, AVATAR_DIR),
+    filename: (_req, file, cb) => {
+      const ext = IMAGE_EXT_BY_MIME[file.mimetype] || "";
+      cb(null, `${randomUUID()}${ext}`);
+    },
+  }),
+  limits: { fileSize: 10 * 1024 * 1024, fieldSize: 32 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (!(file.mimetype in IMAGE_EXT_BY_MIME)) {
+      return cb(new Error(`unsupported image file type: ${file.mimetype}`));
+    }
+    cb(null, true);
+  },
+});
 
 router.get("/", async (req, res) => {
   const q = typeof req.query.q === "string" ? req.query.q : undefined;
@@ -170,6 +201,86 @@ router.patch("/:id/payout", requireAuth, async (req: AuthedRequest, res) => {
       ...(payoutHandle !== undefined ? { payoutHandle: payoutHandle || null } : {}),
     },
   });
+  res.json({ artist: updated });
+});
+
+// Edit artist profile (name/bio) — owner only (user's ask: customize the
+// artist page). bio is user-authored text that gets rendered as-is, so it's
+// bounded in length like the payout handle.
+router.patch("/:id/profile", requireAuth, async (req: AuthedRequest, res) => {
+  const { name, bio } = req.body || {};
+  if (name !== undefined && (typeof name !== "string" || !name.trim() || name.trim().length > 120)) {
+    return res.status(400).json({ error: "name must be a non-empty string <= 120 chars" });
+  }
+  if (bio !== undefined && (typeof bio !== "string" || bio.length > 2000)) {
+    return res.status(400).json({ error: "bio must be a string <= 2000 chars" });
+  }
+  const artist = await prisma.artist.findUnique({ where: { id: req.params.id } });
+  if (!artist) return res.status(404).json({ error: "artist not found" });
+  if (artist.ownerId !== req.userId) return res.status(403).json({ error: "you do not own this artist profile" });
+
+  const updated = await prisma.artist.update({
+    where: { id: artist.id },
+    data: {
+      ...(name !== undefined ? { name: name.trim() } : {}),
+      ...(bio !== undefined ? { bio: bio || null } : {}),
+    },
+  });
+  res.json({ artist: updated });
+});
+
+// Unlink a previously-uploaded image only if it lives under our own
+// storage dir (never a client-supplied path — those are server-generated).
+function unlinkStoredImage(relPath: string | null | undefined, dirPrefix: string): void {
+  if (!relPath || !relPath.startsWith(dirPrefix)) return;
+  const abs = path.join(STORAGE_ROOT, relPath);
+  if (fs.existsSync(abs)) fs.unlinkSync(abs);
+}
+
+// Multer errors (mimetype reject, size over limit) surface via the error
+// channel — wrap so they return a clean 400 instead of the 500 the central
+// error handler would give (multer rejects propagate as generic errors).
+function imageUploadHandler(field: "avatar" | "banner") {
+  return (req: Request, res: Response, next: NextFunction) => {
+    imageUpload.single(field)(req, res, (err) => {
+      if (err) return res.status(400).json({ error: err.message || `${field} upload failed` });
+      next();
+    });
+  };
+}
+
+// Avatar upload (owner only): replace the generated placeholder with the
+// uploader's own image. Mimetype-validated; old file unlinked.
+router.post("/:id/avatar", requireAuth, imageUploadHandler("avatar"), async (req: AuthedRequest, res) => {
+  const artist = await prisma.artist.findUnique({ where: { id: req.params.id } });
+  if (!artist) return res.status(404).json({ error: "artist not found" });
+  if (artist.ownerId !== req.userId) return res.status(403).json({ error: "you do not own this artist profile" });
+
+  const file = req.file;
+  if (!file) return res.status(400).json({ error: "avatar image is required" });
+
+  unlinkStoredImage(artist.avatarPath, "avatars/");
+  const rel = path.relative(STORAGE_ROOT, file.path);
+  const updated = await prisma.artist.update({ where: { id: artist.id }, data: { avatarPath: rel } });
+  res.json({ artist: updated });
+});
+
+// Banner upload (owner only, user's ask: 'add banner etc'): a wide header
+// image for the artist page. New storage dir, served under /media/banners.
+router.post("/:id/banner", requireAuth, imageUploadHandler("banner"), async (req: AuthedRequest, res) => {
+  const artist = await prisma.artist.findUnique({ where: { id: req.params.id } });
+  if (!artist) return res.status(404).json({ error: "artist not found" });
+  if (artist.ownerId !== req.userId) return res.status(403).json({ error: "you do not own this artist profile" });
+
+  const file = req.file;
+  if (!file) return res.status(400).json({ error: "banner image is required" });
+
+  // The multer destination writes to AVATAR_DIR; move to BANNER_DIR.
+  const bannerRel = `banners/${path.basename(file.path)}`;
+  fs.renameSync(file.path, path.join(STORAGE_ROOT, bannerRel));
+
+  unlinkStoredImage(artist.bannerPath, "banners/");
+  const updated = await prisma.artist.update({ where: { id: artist.id }, data: { bannerPath: bannerRel } });
   res.json({ artist: updated });
 });
 

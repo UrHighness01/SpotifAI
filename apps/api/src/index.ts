@@ -128,12 +128,13 @@ const streamLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Cover/avatar art only (never audio — that stays behind the rate-limited,
-// play-counting /stream route). express.static normalizes the path itself,
-// so a `..` segment in the URL can't escape these two directories.
+// Cover/avatar/banner art only (never audio — that stays behind the
+// rate-limited, play-counting /stream route). express.static normalizes the
+// path itself, so a `..` segment in the URL can't escape these directories.
 const STORAGE_ROOT = path.resolve(__dirname, "../../../storage");
 app.use("/media/covers", express.static(path.join(STORAGE_ROOT, "covers"), { fallthrough: false, maxAge: "1d" }));
 app.use("/media/avatars", express.static(path.join(STORAGE_ROOT, "avatars"), { fallthrough: false, maxAge: "1d" }));
+app.use("/media/banners", express.static(path.join(STORAGE_ROOT, "banners"), { fallthrough: false, maxAge: "1d" }));
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
 

@@ -10,9 +10,11 @@ apps/desktop/dist/
 storage/audio/*
 storage/covers/*
 storage/avatars/*
+storage/banners/*
 !storage/audio/.gitkeep
 !storage/covers/.gitkeep
 !storage/avatars/.gitkeep
+!storage/banners/.gitkeep
 
 # personal local test files — never commit real audio
 *.mp3

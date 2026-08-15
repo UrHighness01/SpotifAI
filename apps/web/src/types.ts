@@ -3,6 +3,7 @@ export interface ApiArtist {
   name: string;
   bio: string | null;
   avatarPath: string | null;
+  bannerPath: string | null;
   aiModel: string;
   payoutKind: string | null;
   payoutHandle: string | null;

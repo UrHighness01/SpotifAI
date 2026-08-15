@@ -593,6 +593,49 @@ img.card-art {
   margin-bottom: 0.5rem;
 }
 
+/* Artist page banner (user's ask: 'add banner etc') — wide header image */
+.artist-banner-wrap {
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 0.9rem;
+  max-height: 220px;
+  background: linear-gradient(135deg, #3a3a3a, #1a1a1a);
+}
+.artist-banner {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+}
+
+/* Sidebar "Following" section — artists I follow, under the library nav */
+.sidebar-following {
+  margin-top: 1.2rem;
+}
+.sidebar-follow-link {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.75rem;
+}
+.sidebar-follow-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--bg-card);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+}
+.sidebar-follow-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Support link (Tier A #2): direct-to-artist payout, no middleman */
 .support-link {
   color: var(--accent);

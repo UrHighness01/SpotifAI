@@ -59,6 +59,7 @@ model Artist {
   name          String
   bio           String?
   avatarPath    String?
+  bannerPath    String?
   aiModel       String   @default("unknown")
   payoutKind    String?
   payoutHandle  String?

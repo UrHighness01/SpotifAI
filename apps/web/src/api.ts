@@ -63,6 +63,13 @@ export const api = {
   artist: (id: string) => request(`/artists/${id}`),
   updateArtistPayout: (id: string, payout: { payoutKind?: string | null; payoutHandle?: string | null }) =>
     request(`/artists/${id}/payout`, { method: "PATCH", body: JSON.stringify(payout) }),
+  // Artist profile customization (name/bio) + avatar/banner images — owner only.
+  updateArtistProfile: (id: string, profile: { name?: string; bio?: string | null }) =>
+    request(`/artists/${id}/profile`, { method: "PATCH", body: JSON.stringify(profile) }),
+  uploadArtistAvatar: (id: string, formData: FormData) =>
+    request(`/artists/${id}/avatar`, { method: "POST", body: formData }),
+  uploadArtistBanner: (id: string, formData: FormData) =>
+    request(`/artists/${id}/banner`, { method: "POST", body: formData }),
   createArtist: (name: string, bio: string, aiModel: string) =>
     request("/artists", { method: "POST", body: JSON.stringify({ name, bio, aiModel }) }),
 

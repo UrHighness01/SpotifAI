@@ -1,4 +1,8 @@
 import { NavLink } from "react-router-dom";
+import { useEffect } from "react";
+import { useAuth } from "../auth";
+import { useFollowsStore } from "../store/follows";
+import { mediaUrl } from "../api";
 
 const HomeIcon = () => (
   <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
@@ -31,6 +35,15 @@ const UploadIcon = () => (
 );
 
 export function Sidebar() {
+  const { user } = useAuth();
+  const followed = useFollowsStore((s) => s.artists);
+  const loadFollows = useFollowsStore((s) => s.load);
+
+  // Load my followed artists when logged in (once).
+  useEffect(() => {
+    if (user) loadFollows();
+  }, [user, loadFollows]);
+
   return (
     <aside className="sidebar">
       <nav className="sidebar-nav">
@@ -56,6 +69,27 @@ export function Sidebar() {
           </NavLink>
         </nav>
       </div>
+
+      {/* Following (user's ask): artists I follow, listed right under the
+          library nav so they're one click away. Loaded from the shared
+          follows store — updates instantly when I follow/unfollow. */}
+      {user && followed.length > 0 && (
+        <div className="sidebar-library sidebar-following">
+          <h2>Following</h2>
+          <nav>
+            {followed.map((artist) => (
+              <NavLink key={artist.id} to={`/artist/${artist.id}`} className="sidebar-link sidebar-follow-link">
+                {artist.avatarPath ? (
+                  <img className="sidebar-follow-avatar" src={mediaUrl(artist.avatarPath)!} alt="" />
+                ) : (
+                  <span className="sidebar-follow-avatar">🤖</span>
+                )}
+                <span className="sidebar-follow-name">{artist.name}</span>
+              </NavLink>
+            ))}
+          </nav>
+        </div>
+      )}
     </aside>
   );
 }
