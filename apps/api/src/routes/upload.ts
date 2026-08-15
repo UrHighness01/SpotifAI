@@ -23,12 +23,42 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage });
+const AUDIO_MIME_TYPES = new Set([
+  "audio/mpeg",
+  "audio/mp3",
+  "audio/wav",
+  "audio/x-wav",
+  "audio/flac",
+  "audio/ogg",
+  "audio/aac",
+  "audio/mp4",
+  "audio/x-m4a",
+]);
+const COVER_MIME_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 200 * 1024 * 1024,
+  },
+  fileFilter: (req, file, cb) => {
+    const allowed = file.fieldname === "cover" ? COVER_MIME_TYPES : AUDIO_MIME_TYPES;
+    if (!allowed.has(file.mimetype)) {
+      return cb(new Error(`unsupported ${file.fieldname} file type: ${file.mimetype}`));
+    }
+    cb(null, true);
+  },
+});
 
 router.post(
   "/track",
   requireAuth,
-  upload.fields([{ name: "audio", maxCount: 1 }, { name: "cover", maxCount: 1 }]),
+  (req, res, next) => {
+    upload.fields([{ name: "audio", maxCount: 1 }, { name: "cover", maxCount: 1 }])(req, res, (err) => {
+      if (err) return res.status(400).json({ error: err.message || "upload failed" });
+      next();
+    });
+  },
   async (req, res) => {
     const files = req.files as { audio?: Express.Multer.File[]; cover?: Express.Multer.File[] };
     const audioFile = files?.audio?.[0];

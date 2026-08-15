@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../db";
+import { requireAuth } from "../middleware/auth";
 
 const router = Router();
 
@@ -21,7 +22,7 @@ router.get("/:id", async (req, res) => {
   res.json({ artist });
 });
 
-router.post("/", async (req, res) => {
+router.post("/", requireAuth, async (req, res) => {
   const { name, bio, avatarPath, aiModel } = req.body || {};
   if (!name) return res.status(400).json({ error: "name is required" });
   const artist = await prisma.artist.create({
