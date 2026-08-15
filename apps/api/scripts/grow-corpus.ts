@@ -51,11 +51,11 @@ async function main() {
   for (const t of tracks) {
     if (existing.has(t.fingerprintHash)) continue;
     const record = {
-      perceptualHash: t.perceptualHash,
-      byteHash: t.fingerprintHash,
+      perceptualHash: t.perceptualHash!,
+      byteHash: t.fingerprintHash!,
       generator: t.aiModel,
       sample: `track-${t.id}`,
-      sampleId: t.fingerprintHash,
+      sampleId: t.fingerprintHash!,
       collectedAt: new Date().toISOString(),
       source: "declared-upload",
     };
