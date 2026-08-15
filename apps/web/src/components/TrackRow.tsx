@@ -119,6 +119,11 @@ export function TrackRow({ track, index, queue, onMetaChange }: Props) {
                         ✓ provenance recorded
                       </span>
                     )}
+                    {track.remixOf._count?.attestations ? (
+                      <span className={`rights-badge provenance`} style={{ marginLeft: "0.4rem" }}>
+                        {track.remixOf._count.attestations} independent verif{track.remixOf._count.attestations === 1 ? "ication" : "ications"}
+                      </span>
+                    ) : null}
                   </span>
                 </div>
               )}

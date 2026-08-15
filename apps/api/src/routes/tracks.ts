@@ -8,7 +8,12 @@ const router = Router();
 const TRACK_INCLUDE = {
   artist: true,
   album: true,
-  remixOf: { include: { artist: true } },
+  remixOf: {
+    include: {
+      artist: true,
+      _count: { select: { attestations: true } },
+    },
+  },
   remixes: { include: { artist: true } },
 } as const;
 
@@ -274,7 +279,10 @@ router.get("/:id", async (req, res) => {
     include: TRACK_INCLUDE,
   });
   if (!track) return res.status(404).json({ error: "track not found" });
-  res.json({ track });
+  // Attestation count (Tier H #4): how many independent verifications this
+  // track has — surfaced so a remix source's credibility is visible.
+  const attestationCount = await prisma.attestation.count({ where: { trackId: track.id } });
+  res.json({ track, attestationCount });
 });
 
 // Generation-notes annex (John's ideas pass #8): owner-scoped editing of the

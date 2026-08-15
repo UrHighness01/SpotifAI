@@ -33,7 +33,7 @@ export interface ApiTrack {
   licensePriceUsd: number | null;
   licenseTerms: string | null;
   remixOfId: string | null;
-  remixOf?: ApiTrack | null;
+  remixOf?: ApiTrack & { _count?: { attestations?: number } } | null;
   remixes?: ApiTrack[];
   fingerprintHash: string | null;
   fingerprintModel: string | null;
