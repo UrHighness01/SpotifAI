@@ -395,10 +395,33 @@ router.patch("/:id/meta", requireAuth, async (req: AuthedRequest, res) => {
 // (anti-sybil) before the count can power ranking.
 const ATTEST_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 const ATTEST_LIMIT_MAX = 20;
+// Bounded memory (John's ticket on the consolidation): the in-memory Map
+// grows by one entry per distinct userId forever without a cap or sweep —
+// a slow-burn leak on a long-running public deployment. Cap the size and
+// lazily prune expired entries when the cap is hit.
+const ATTEST_LIMIT_MAX_ENTRIES = 10_000;
 const attestLimits = new Map<string, { count: number; resetAt: number }>();
 
 function attestRateLimited(userId: string): boolean {
   const now = Date.now();
+  // Lazy sweep: when the map is at capacity, drop expired entries (and if
+  // still full, evict the oldest-reset entry) to bound memory.
+  if (attestLimits.size >= ATTEST_LIMIT_MAX_ENTRIES) {
+    let oldestKey: string | null = null;
+    let oldestReset = Infinity;
+    for (const [key, entry] of attestLimits) {
+      if (now > entry.resetAt) {
+        attestLimits.delete(key);
+      } else if (entry.resetAt < oldestReset) {
+        oldestReset = entry.resetAt;
+        oldestKey = key;
+      }
+    }
+    if (attestLimits.size >= ATTEST_LIMIT_MAX_ENTRIES && oldestKey) {
+      attestLimits.delete(oldestKey);
+    }
+  }
+
   const entry = attestLimits.get(userId);
   if (!entry || now > entry.resetAt) {
     attestLimits.set(userId, { count: 1, resetAt: now + ATTEST_LIMIT_WINDOW_MS });
