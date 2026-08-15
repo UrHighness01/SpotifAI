@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, mediaUrl } from "../api";
 import { TrackRow } from "../components/TrackRow";
@@ -21,18 +21,60 @@ export function Search() {
   const [artists, setArtists] = useState<ApiArtist[]>([]);
   const [tracks, setTracks] = useState<ApiTrack[]>([]);
   const [searched, setSearched] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // Latest requested query — stale responses (an older keystroke resolving
+  // after a newer one) are discarded.
+  const reqSeq = useRef(0);
+  const retryTimer = useRef<number | undefined>(undefined);
 
   const run = async (value: string, model: string | null) => {
+    const seq = ++reqSeq.current;
     setQ(value);
     setAiModel(model);
-    const [a, t] = await Promise.all([
-      api.artists(value.trim() || undefined, model || undefined),
-      api.tracks({ q: value.trim() || undefined, aiModel: model || undefined }),
-    ]);
-    setArtists(a.artists);
-    setTracks(t.tracks);
-    setSearched(true);
+    setSearching(true);
+    setError(null);
+    try {
+      const [a, t] = await Promise.all([
+        api.artists(value.trim() || undefined, model || undefined),
+        api.tracks({ q: value.trim() || undefined, aiModel: model || undefined }),
+      ]);
+      if (seq !== reqSeq.current) return; // stale response
+      setArtists(a.artists);
+      setTracks(t.tracks);
+      setSearched(true);
+      setSearching(false);
+    } catch (err) {
+      if (seq !== reqSeq.current) return;
+      setSearching(false);
+      // A failed search used to leave the page stuck on "No tracks found"
+      // forever (user-reported: results only appeared after clicking a
+      // facet, which re-fired the request). Show the failure and retry.
+      const status = (err as { status?: number })?.status;
+      const msg = err instanceof Error ? err.message : "search failed";
+      setError(status === 429 ? "Too many requests — try again in a moment" : `Search failed (${msg}) — retrying…`);
+      if (status === undefined || status >= 500) {
+        if (retryTimer.current) clearTimeout(retryTimer.current);
+        retryTimer.current = window.setTimeout(() => run(value, model), 2000);
+      }
+    }
   };
+
+  // Retry/refresh when the window regains focus — the API may have come up
+  // or restarted since the last attempt.
+  useEffect(() => {
+    const onRefocus = () => {
+      if (document.visibilityState === "visible" && searched) run(q, aiModel);
+    };
+    window.addEventListener("focus", onRefocus);
+    document.addEventListener("visibilitychange", onRefocus);
+    return () => {
+      window.removeEventListener("focus", onRefocus);
+      document.removeEventListener("visibilitychange", onRefocus);
+      if (retryTimer.current) clearTimeout(retryTimer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searched, q, aiModel]);
 
   const facet = (model: string) => {
     const next = aiModel === model ? null : model;
@@ -79,6 +121,8 @@ export function Search() {
           </Link>
         </span>
       </div>
+
+      {error && <div className="auth-error" style={{ marginTop: "0.75rem" }}>{error}</div>}
 
       {searched && (
         <>
