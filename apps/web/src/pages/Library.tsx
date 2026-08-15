@@ -53,7 +53,10 @@ export function Library() {
             <h2 className="section-title">I verified this</h2>
           </div>
           <p style={{ color: "var(--text-dim)", fontSize: "0.85rem", marginBottom: "0.6rem" }}>
-            {verified.length} track(s) where you hold the actual audio and confirmed it matches the recorded fingerprint.
+            {verified.length} track(s) where you hold the actual audio and confirmed it matches the recorded fingerprint.{" "}
+            <a href={`/verified/${user.id}`} className="support-link" style={{ fontSize: "0.8rem" }}>
+              Share your verified library →
+            </a>
           </p>
           <div>
             {verified.map((track, i) => (

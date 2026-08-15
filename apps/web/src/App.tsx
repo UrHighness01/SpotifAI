@@ -6,6 +6,7 @@ import { Artist } from "./pages/Artist";
 import { Album } from "./pages/Album";
 import { Search } from "./pages/Search";
 import { MadeWith } from "./pages/MadeWith";
+import { VerifiedCollection } from "./pages/VerifiedCollection";
 import { Library } from "./pages/Library";
 import { Playlists } from "./pages/Playlists";
 import { PlaylistDetail } from "./pages/PlaylistDetail";
@@ -67,6 +68,7 @@ export function App() {
           <Route path="/search" element={<Search />} />
           <Route path="/made-with/:model" element={<MadeWith />} />
           <Route path="/library" element={<Library />} />
+          <Route path="/verified/:userId" element={<VerifiedCollection />} />
           <Route path="/playlists" element={<Playlists />} />
           <Route path="/playlist/:id" element={<PlaylistDetail />} />
           <Route path="/upload" element={<Upload />} />

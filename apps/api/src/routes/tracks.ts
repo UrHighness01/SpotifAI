@@ -552,4 +552,21 @@ router.get("/:id/similar", async (req, res) => {
   res.json({ tracks: ordered, reasons: Object.fromEntries(ordered.map((t) => [t.id, reasons.get(t.id)])) });
 });
 
+// Shareable verified collection (John's endorsed feature): a PUBLIC view of
+// a user's verified-library — 'here's audio I've actually held and
+// confirmed.' Sharing turns the personal honesty record into a social
+// signal, sybil-immune (it's per-user sharing, not ranking). Public by
+// design (like a shared playlist); the tracks are public anyway.
+router.get("/user/:userId/verified", async (req, res) => {
+  const user = await prisma.user.findUnique({ where: { id: req.params.userId }, select: { id: true, displayName: true } });
+  if (!user) return res.status(404).json({ error: "user not found" });
+
+  const attestations = await prisma.attestation.findMany({
+    where: { userId: user.id },
+    include: { track: { include: TRACK_INCLUDE } },
+    orderBy: { createdAt: "desc" },
+  });
+  res.json({ user, verified: attestations.map((a) => ({ ...a.track, verifiedAt: a.createdAt })) });
+});
+
 export default router;
