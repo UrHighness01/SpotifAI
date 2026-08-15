@@ -321,18 +321,72 @@ static void block_forward(float *x, int layer, const MhsBlock *blk) {
     for (int i = 0; i < d; i++) x[i] += mo[i];
 }
 
-/* ── Sampling (greedy, deterministic — blurbs want stability) ────────── */
-static int sample_greedy(const float *x) {
+/* ── Sampling (top-k + nucleus + repetition penalty, from Project-K) ─────
+ * Plain greedy on a tiny overfit GLA collapses into repetition loops.
+ * Project-K's proven config (temp 0.85, top-k 50, top-p 0.92, rep-pen 1.15)
+ * keeps blurbs varied while staying on-distribution.
+ */
+#define GEN_TEMP      0.85f
+#define GEN_TOPK      50
+#define GEN_TOPP      0.92f
+#define GEN_REP_PEN   1.15f
+#define GEN_REP_WIN   64
+
+static int g_recent_toks[GEN_REP_WIN];
+static int g_recent_n = 0;
+
+static int sample_token(const float *x) {
     int d = (int)g_d, V = (int)g_vocab;
     int ppr = I4_PACKED_PER_ROW(d), gpr = I4_GROUPS_PER_ROW(d);
-    float best = -1e30f; int best_tok = 0;
+    float logits[MAX_VOCAB];
     for (int i = 0; i < V; i++) {
         const uint8_t *pw = g_head + (size_t)i * ppr;
         const float *ps = (const float *)(g_head + (size_t)V * ppr + (size_t)i * gpr * 4);
-        float logit = row_dot_i4(pw, ps, I4_GS, x, d);
-        if (logit > best) { best = logit; best_tok = i; }
+        logits[i] = row_dot_i4(pw, ps, I4_GS, x, d);
     }
-    return best_tok;
+    /* Repetition penalty: divide logit for tokens seen recently. */
+    for (int r = 0; r < g_recent_n; r++) {
+        int t = g_recent_toks[r];
+        if (t >= 0 && t < V)
+            logits[t] = logits[t] > 0 ? logits[t] / GEN_REP_PEN : logits[t] * GEN_REP_PEN;
+    }
+    /* Top-k: keep the k largest logits. */
+    int k = GEN_TOPK < V ? GEN_TOPK : V;
+    int top_idx[MAX_VOCAB]; int nfound = 0;
+    for (int i = 0; i < V; i++) {
+        if (nfound < k) { top_idx[nfound++] = i; }
+        else {
+            int min_j = 0;
+            for (int j = 1; j < nfound; j++) if (logits[top_idx[j]] < logits[top_idx[min_j]]) min_j = j;
+            if (logits[i] > logits[top_idx[min_j]]) top_idx[min_j] = i;
+        }
+    }
+    /* Softmax with temperature over top-k. */
+    float mx = logits[top_idx[0]];
+    for (int j = 1; j < nfound; j++) if (logits[top_idx[j]] > mx) mx = logits[top_idx[j]];
+    float sum = 0;
+    float probs[MAX_VOCAB];
+    for (int j = 0; j < nfound; j++) { probs[j] = expf((logits[top_idx[j]] - mx) / GEN_TEMP); sum += probs[j]; }
+    /* Nucleus (top-p): sort desc, keep min set with cumulative prob >= top-p. */
+    for (int i = 0; i < nfound - 1; i++)
+        for (int j = i + 1; j < nfound; j++)
+            if (probs[j] > probs[i]) {
+                float tp = probs[i]; probs[i] = probs[j]; probs[j] = tp;
+                int ti = top_idx[i]; top_idx[i] = top_idx[j]; top_idx[j] = ti;
+            }
+    float nucleus = GEN_TOPP * sum, cum = 0; int nucleus_n = nfound;
+    for (int j = 0; j < nfound; j++) { cum += probs[j]; if (cum >= nucleus) { nucleus_n = j + 1; break; } }
+    /* Sample from the nucleus. */
+    float rnd = (float)rand() / (float)RAND_MAX * cum;
+    cum = 0; int chosen = top_idx[0];
+    for (int j = 0; j < nucleus_n; j++) { cum += probs[j]; if (cum >= rnd) { chosen = top_idx[j]; break; } }
+    /* Record in recent window. */
+    if (g_recent_n < GEN_REP_WIN) g_recent_toks[g_recent_n++] = chosen;
+    else {
+        memmove(g_recent_toks, g_recent_toks + 1, (GEN_REP_WIN - 1) * sizeof(int));
+        g_recent_toks[GEN_REP_WIN - 1] = chosen;
+    }
+    return chosen;
 }
 
 /* ── Vocabulary (loaded from vocab.tsv: token_idx \t char) ───────────── */
@@ -423,9 +477,12 @@ int main(int argc, char **argv) {
     /* Final layer norm */
     layer_norm_b(x, g_ln_f, g_ln_f_bias, (int)g_d);
 
+    srand((unsigned)time(NULL));
+    g_recent_n = 0;
+
     /* Generate continuation */
     for (int t = 0; t < n_tokens; t++) {
-        int tok = sample_greedy(x);
+        int tok = sample_token(x);
         if (tok >= 0 && tok < g_vocab_n && g_vocab_chars[tok][0]) {
             printf("%s", g_vocab_chars[tok]);
         }
