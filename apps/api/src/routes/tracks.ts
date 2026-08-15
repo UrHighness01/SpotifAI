@@ -273,13 +273,15 @@ router.get("/:id", async (req, res) => {
 });
 
 // Generation-notes annex (John's ideas pass #8): owner-scoped editing of the
-// AI-disclosure metadata (aiPrompt / aiGenerationNotes) after upload. Only
-// the artist's owner can change it; bounded lengths (32KB fieldSize cap
-// mirrors the upload route).
+// AI-disclosure metadata (aiPrompt / aiGenerationNotes / rightsNotice) after
+// upload. Only the artist's owner can change it; bounded lengths (32KB
+// fieldSize cap mirrors the upload route).
+const RIGHTS_OPTIONS = ["all-rights-reserved", "cc-by", "cc-by-sa", "cc-by-nc", "public-domain"];
+
 router.patch("/:id/meta", requireAuth, async (req: AuthedRequest, res) => {
-  const { aiPrompt, aiGenerationNotes } = req.body || {};
-  if (aiPrompt === undefined && aiGenerationNotes === undefined) {
-    return res.status(400).json({ error: "aiPrompt or aiGenerationNotes is required" });
+  const { aiPrompt, aiGenerationNotes, rightsNotice } = req.body || {};
+  if (aiPrompt === undefined && aiGenerationNotes === undefined && rightsNotice === undefined) {
+    return res.status(400).json({ error: "aiPrompt, aiGenerationNotes, or rightsNotice is required" });
   }
   const MAX = 32 * 1024;
   if (aiPrompt !== undefined && (typeof aiPrompt !== "string" || aiPrompt.length > MAX)) {
@@ -287,6 +289,9 @@ router.patch("/:id/meta", requireAuth, async (req: AuthedRequest, res) => {
   }
   if (aiGenerationNotes !== undefined && (typeof aiGenerationNotes !== "string" || aiGenerationNotes.length > MAX)) {
     return res.status(400).json({ error: `aiGenerationNotes must be a string <= ${MAX} chars` });
+  }
+  if (rightsNotice !== undefined && !RIGHTS_OPTIONS.includes(rightsNotice)) {
+    return res.status(400).json({ error: `rightsNotice must be one of: ${RIGHTS_OPTIONS.join(", ")}` });
   }
 
   const track = await prisma.track.findUnique({ where: { id: req.params.id }, include: { artist: true } });
@@ -298,6 +303,7 @@ router.patch("/:id/meta", requireAuth, async (req: AuthedRequest, res) => {
     data: {
       ...(aiPrompt !== undefined ? { aiPrompt: aiPrompt || null } : {}),
       ...(aiGenerationNotes !== undefined ? { aiGenerationNotes: aiGenerationNotes || null } : {}),
+      ...(rightsNotice !== undefined ? { rightsNotice: rightsNotice || "all-rights-reserved" } : {}),
     },
     include: TRACK_INCLUDE,
   });

@@ -402,6 +402,27 @@ img.card-art {
 .recipe-title { font-weight: 500; font-size: 0.9rem; }
 .recipe-row { font-size: 0.85rem; color: var(--text-dim); }
 
+/* Rights/consent notice (TrackRow disclosure) */
+.rights-badge {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.rights-badge.public-domain { border-color: var(--accent); color: var(--accent); }
+.rights-badge.cc-by, .rights-badge.cc-by-sa, .rights-badge.cc-by-nc { border-color: #2f6b4f; color: var(--accent); }
+.ai-rights-select {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 0.35rem 0.5rem;
+  font-size: 0.85rem;
+}
+
 /* Owner-scoped cover upload (Album page) */
 .cover-upload {
   display: inline-block;
