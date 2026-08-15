@@ -467,9 +467,11 @@ int main(int argc, char **argv) {
     if (n == 0) { fprintf(stderr, "prompt encoded to 0 tokens\n"); return 1; }
 
     float x[MHS_D];
+    int pos = 0;
     for (int i = 0; i < n && i < g_block_size; i++) {
         embed_token(toks[i], x);
-        for (int k = 0; k < (int)g_d; k++) x[k] += g_pos_buf[(size_t)i * g_d + k];
+        for (int k = 0; k < (int)g_d; k++) x[k] += g_pos_buf[(size_t)pos * g_d + k];
+        pos++;
         for (uint32_t L = 0; L < g_n_layers; L++) block_forward(x, (int)L, &g_blocks[L]);
         /* If the prompt itself ends with 'blurb:' we keep the last state and
          * generate; otherwise we still generate from the last token state. */
@@ -487,7 +489,8 @@ int main(int argc, char **argv) {
             printf("%s", g_vocab_chars[tok]);
         }
         embed_token(tok, x);
-        for (int k = 0; k < (int)g_d; k++) x[k] += g_pos_buf[(size_t)0 * g_d + k];
+        for (int k = 0; k < (int)g_d; k++) x[k] += g_pos_buf[(size_t)(pos % g_block_size) * g_d + k];
+        pos++;
         for (uint32_t L = 0; L < g_n_layers; L++) block_forward(x, (int)L, &g_blocks[L]);
         layer_norm_b(x, g_ln_f, g_ln_f_bias, (int)g_d);
     }
