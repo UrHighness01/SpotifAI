@@ -102,13 +102,20 @@ export function TrackRow({ track, index, queue, onMetaChange }: Props) {
                   </span>
                 </div>
               )}
-              {/* Provenance fingerprint (John's next-ideas #6): recorded
-                  immutably at upload — the 'we can prove it' layer. */}
+              {/* Provenance fingerprint (John's next-ideas #6 + Tier 3):
+                  recorded immutably at upload — the 'we can prove it'
+                  layer. The label is honest: 'recorded' means the
+                  fingerprint was captured; signature matching (when the
+                  corpus exists) upgrades it to matched/uncertain — never a
+                  binary 'verified'. */}
               {track.fingerprintHash && (
                 <div>
                   <span className="ai-detail-label">Provenance:</span>{" "}
-                  <span className={`rights-badge provenance`} title={`Fingerprint ${track.fingerprintHash} captured at upload`}>
-                    ✓ fingerprint {track.fingerprintHash}
+                  <span
+                    className={`rights-badge provenance ${track.provenanceStatus || "recorded"}`}
+                    title={`Fingerprint ${track.fingerprintHash} captured at upload · status: ${track.provenanceStatus || "recorded"}`}
+                  >
+                    ✓ {track.provenanceStatus || "recorded"} · {track.fingerprintHash}
                   </span>
                 </div>
               )}

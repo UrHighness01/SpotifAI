@@ -134,6 +134,11 @@ router.post(
         fingerprintHash: fingerprint?.hash,
         fingerprintModel: fingerprint?.model,
         fingerprintCapturedAt: fingerprint ? new Date() : undefined,
+        // Honest label (John's Tier 3): 'recorded' = fingerprint captured,
+        // no generator-signature match attempted yet. As a signature corpus
+        // is built, this moves to signature-matched / signature-uncertain —
+        // never a binary 'verified' until the corpus is trustworthy.
+        provenanceStatus: fingerprint ? "recorded" : undefined,
       },
     });
 

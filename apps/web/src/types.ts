@@ -34,6 +34,7 @@ export interface ApiTrack {
   fingerprintHash: string | null;
   fingerprintModel: string | null;
   fingerprintCapturedAt: string | null;
+  provenanceStatus: string | null;
   playCount: number;
   createdAt: string;
   artist?: ApiArtist;
