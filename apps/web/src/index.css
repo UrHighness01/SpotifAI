@@ -60,6 +60,36 @@ button { font-family: inherit; cursor: pointer; }
 }
 .search-input:focus { outline: 1px solid var(--text); }
 
+/* "Made with" AI-generator browse facet (Search page) */
+.facet-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.facet-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+}
+.facet-chip {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.3rem 0.85rem;
+  color: var(--text);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.facet-chip:hover { border-color: var(--accent); color: var(--accent); }
+.facet-chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
 .brand {
   font-weight: 800;
   font-size: 1.1rem;

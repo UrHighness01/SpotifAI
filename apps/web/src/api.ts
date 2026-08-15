@@ -38,7 +38,13 @@ export const api = {
   resetPassword: (token: string, password: string) =>
     request("/auth/reset-password", { method: "POST", body: JSON.stringify({ token, password }) }),
 
-  artists: (q?: string) => request(`/artists${q ? `?q=${encodeURIComponent(q)}` : ""}`),
+  artists: (q?: string, aiModel?: string) => {
+    const qs = new URLSearchParams();
+    if (q) qs.set("q", q);
+    if (aiModel) qs.set("aiModel", aiModel);
+    const s = qs.toString();
+    return request(`/artists${s ? `?${s}` : ""}`);
+  },
   artist: (id: string) => request(`/artists/${id}`),
   createArtist: (name: string, bio: string, aiModel: string) =>
     request("/artists", { method: "POST", body: JSON.stringify({ name, bio, aiModel }) }),

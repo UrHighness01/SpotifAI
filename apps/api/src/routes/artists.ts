@@ -11,8 +11,12 @@ const AVATAR_DIR = path.join(STORAGE_ROOT, "avatars");
 
 router.get("/", async (req, res) => {
   const q = typeof req.query.q === "string" ? req.query.q : undefined;
+  const aiModel = typeof req.query.aiModel === "string" ? req.query.aiModel : undefined;
   const artists = await prisma.artist.findMany({
-    where: q ? { name: { contains: q } } : undefined,
+    where: {
+      ...(q ? { name: { contains: q } } : {}),
+      ...(aiModel ? { aiModel } : {}),
+    },
     orderBy: { createdAt: "desc" },
   });
   res.json({ artists });
