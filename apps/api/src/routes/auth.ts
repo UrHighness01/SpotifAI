@@ -56,33 +56,39 @@ router.post("/register", async (req, res) => {
     return res.status(400).json({ error: "password must be at least 8 characters" });
   }
   const normalizedEmail = String(email).trim().toLowerCase();
-  const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
-  if (existing) {
-    return res.status(409).json({ error: "email already registered" });
-  }
-  const passwordHash = await bcrypt.hash(password, 10);
-  const { raw, hash } = generateToken();
-  const user = await prisma.user.create({
-    data: {
-      email: normalizedEmail,
-      passwordHash,
-      displayName,
-      emailVerificationTokenHash: hash,
-      emailVerificationExpires: new Date(Date.now() + VERIFICATION_TTL_MS),
-    },
+  // F1 (John's review — MEDIUM): an existing account used to return a
+  // distinct 409 "email already registered", making this a public
+  // enrollment oracle. Now BOTH cases return the same "check your email"
+  // response (with the same timing floor) so an attacker can't distinguish
+  // registered from unregistered emails.
+  await withTimingFloor(async () => {
+    const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (existing) return;
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const { raw, hash } = generateToken();
+    const user = await prisma.user.create({
+      data: {
+        email: normalizedEmail,
+        passwordHash,
+        displayName,
+        emailVerificationTokenHash: hash,
+        emailVerificationExpires: new Date(Date.now() + VERIFICATION_TTL_MS),
+      },
+    });
+
+    const verifyUrl = `${WEB_ORIGIN}/verify-email?token=${raw}`;
+    await sendVerificationEmail(user.email, verifyUrl);
+    // Dev mode: surface the verification link (email only prints to console).
+    if (process.env.NODE_ENV !== "production" && !process.env.SMTP_HOST) {
+      res.locals.devVerifyUrl = verifyUrl;
+    }
   });
 
-  const verifyUrl = `${WEB_ORIGIN}/verify-email?token=${raw}`;
-  await sendVerificationEmail(user.email, verifyUrl);
-
+  // Generic response in both cases — no enrollment oracle.
   res.status(201).json({
-    user: publicUser(user),
-    message: "Registered. Check your email to verify your account before logging in.",
-    // DEV MODE (no SMTP configured): the email is only printed to the
-    // console, so surface the verification link here so testers can actually
-    // complete registration. NEVER exposed in production (SMTP must be set;
-    // the email is the only channel there).
-    ...(process.env.NODE_ENV !== "production" && !process.env.SMTP_HOST ? { devVerifyUrl: verifyUrl } : {}),
+    message: "If this email isn't registered yet, a verification email was sent.",
+    ...(process.env.NODE_ENV !== "production" && !process.env.SMTP_HOST ? { devVerifyUrl: res.locals.devVerifyUrl } : {}),
   });
 });
 
@@ -128,6 +134,15 @@ router.post("/resend-verification", async (req, res) => {
     const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (!user || user.emailVerified) return;
 
+    // F2 (John's review — MEDIUM): don't rotate an OUTSTANDING unexpired
+    // verification token — otherwise anyone who knows the email can keep
+    // invalidating the current link (token-DoS) and race the user to
+    // verification. Only issue a fresh token when the previous one has
+    // expired or was never issued.
+    if (user.emailVerificationTokenHash && user.emailVerificationExpires && user.emailVerificationExpires > new Date()) {
+      return;
+    }
+
     const { raw, hash } = generateToken();
     await prisma.user.update({
       where: { id: user.id },
@@ -156,12 +171,22 @@ router.post("/login", async (req, res) => {
     return res.status(400).json({ error: "email and password are required" });
   }
   const normalizedEmail = String(email).trim().toLowerCase();
-  const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
-  if (!user) {
-    return res.status(401).json({ error: "invalid credentials" });
-  }
-  const valid = await bcrypt.compare(password, user.passwordHash);
-  if (!valid) {
+  // F3 (John's review — MEDIUM): for a known email the bcrypt.compare is
+  // ~100ms slower than the findUnique early-return for an unknown one —
+  // response timing leaked which emails are registered. The timing floor +
+  // a fake bcrypt compare for unknown users makes both paths take the same
+  // wall-clock time.
+  const { user, valid } = await withTimingFloor(async () => {
+    const found = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (!found) {
+      // Same cost as the real compare below — indistinguishable timing.
+      await bcrypt.compare(password, "$2a$10$CwTycUXWue0Thq9StjUM0uJ8tS3L8vXm2r7lQaK0nYx5Tq1n1y1eK");
+      return { user: null, valid: false };
+    }
+    const ok = await bcrypt.compare(password, found.passwordHash);
+    return { user: found, valid: ok };
+  });
+  if (!user || !valid) {
     return res.status(401).json({ error: "invalid credentials" });
   }
   if (!user.emailVerified) {

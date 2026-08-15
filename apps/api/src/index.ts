@@ -143,7 +143,10 @@ app.use("/auth/resend-verification", mailLimiter);
 app.use("/auth", authLimiter, authRoutes);
 app.use("/artists", writeLimiter, artistRoutes);
 app.use("/albums", writeLimiter, albumRoutes);
-app.use("/tracks", trackRoutes);
+// /tracks under writeLimiter too (F10, John's review): PATCH /:id/meta was
+// the one unbounded write router — it only skips GET/HEAD/OPTIONS, so
+// public catalog reads stay unlimited while owner writes are bounded.
+app.use("/tracks", writeLimiter, trackRoutes);
 app.use("/upload", uploadLimiter, uploadRoutes);
 app.use("/stream", streamLimiter, streamRoutes);
 app.use("/library", writeLimiter, libraryRoutes);

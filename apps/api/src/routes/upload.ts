@@ -195,32 +195,39 @@ router.post(
       }
     }
 
-    // Tracks have no cover of their own (only Album does), so a track
-    // uploaded without an albumId gets a single-track album created for it
-    // — otherwise it would have no way to ever show cover art in the UI.
-    if (!album) {
-      album = await prisma.album.create({ data: { title, artistId } });
+    // F8 (John's review — MEDIUM): the album + track creation is now ONE
+    // transaction, so a mid-create failure rolls back the album row instead
+    // of leaving an orphan album (the batch route already did this).
+    let track;
+    try {
+      track = await prisma.$transaction(async (tx) => {
+        // Tracks have no cover of their own (only Album does), so a track
+        // uploaded without an albumId gets a single-track album created for
+        // it — otherwise it would have no way to ever show cover art.
+        const effAlbum =
+          album ?? (await tx.album.create({ data: { title, artistId } }));
+        // aiModel is optional (user's ask) — 'unknown' when not disclosed.
+        const model = (aiModel as string | undefined)?.trim() || "unknown";
+        return createTrackRecord(tx, {
+          audioPath: audioFile.path,
+          title,
+          artistId,
+          albumId: effAlbum.id,
+          durationSec,
+          model,
+          aiPrompt,
+          aiGenerationNotes,
+          rightsNotice,
+          licensePriceUsd,
+          licenseTerms,
+        });
+      });
+    } catch (err) {
+      cleanupAndReject(500, "upload failed");
+      throw err;
     }
-
-    // aiModel is optional (user's ask) — 'unknown' when not disclosed. The
-    // fingerprint + signature evaluation handle 'unknown' gracefully
-    // (evaluateProvenance returns 'recorded' for unknown generators).
-    const model = (aiModel as string | undefined)?.trim() || "unknown";
-    const track = await createTrackRecord(prisma, {
-      audioPath: audioFile.path,
-      title,
-      artistId,
-      albumId: album.id,
-      durationSec,
-      model,
-      aiPrompt,
-      aiGenerationNotes,
-      rightsNotice,
-      licensePriceUsd,
-      licenseTerms,
-    });
-
-    await ensureAlbumCover(album.id, coverFile);
+    const albumIdUsed = track.albumId!;
+    await ensureAlbumCover(albumIdUsed, coverFile);
 
     res.status(201).json({ track });
   }
@@ -256,6 +263,16 @@ router.post(
     };
 
     if (audioFiles.length === 0) return cleanupAndReject(400, "at least one audio file is required");
+
+    // F7 (John's review — HIGH): 50 files × 200MB = 10GB disk-fill per
+    // request. Cap the CUMULATIVE batch bytes (2GB per request) in addition
+    // to the per-file 200MB multer limit, so a single request can't exhaust
+    // the disk even with 30 batches/hour.
+    const MAX_BATCH_BYTES = 2 * 1024 * 1024 * 1024; // 2GB aggregate
+    const totalBytes = audioFiles.reduce((sum, f) => sum + (f.size || 0), 0);
+    if (totalBytes > MAX_BATCH_BYTES) {
+      return cleanupAndReject(400, `batch too large: ${Math.round(totalBytes / 1024 / 1024)}MB total (max 2048MB per batch)`);
+    }
 
     const { artistId, albumTitle, titles, aiModel, aiPrompt, aiGenerationNotes, rightsNotice, licensePriceUsd, licenseTerms } = req.body || {};
     if (!artistId) return cleanupAndReject(400, "artistId is required");
