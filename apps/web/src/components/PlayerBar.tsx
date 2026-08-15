@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../store/player";
 import { api, mediaUrl } from "../api";
 import { clampText } from "../utils/text";
+import { LikeButton } from "./LikeButton";
 
 function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds)) return "0:00";
@@ -120,8 +121,15 @@ export function PlayerBar() {
           <div className="art" />
         )}
         <div className="meta">
-          <div className="title">{track.title}</div>
-          <div className="artist">{track.artist?.name}</div>
+          <div className="player-meta-row">
+            <div>
+              <div className="title">{track.title}</div>
+              <div className="artist">{track.artist?.name}</div>
+            </div>
+            {/* Like (heart) button in the player — the user's ask: like the
+                playing track straight from the player. */}
+            <LikeButton trackId={track.id} className="like-btn-in-player" />
+          </div>
           {/* Provenance badge at the point of play (slice 73): the honest
               label rendered where the listener encounters it — the capstone
               made felt. signature-confirmed (independently validated),

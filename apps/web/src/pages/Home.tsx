@@ -4,13 +4,8 @@ import { api, mediaUrl } from "../api";
 import type { ApiArtist, ApiTrack } from "../types";
 import { usePlayerStore } from "../store/player";
 import { TrackRow } from "../components/TrackRow";
+import { TrackCard } from "../components/TrackCard";
 import { clampText } from "../utils/text";
-
-const PlayIcon = () => (
-  <svg viewBox="0 0 24 24" width="18" height="18" fill="#000" aria-hidden="true">
-    <path d="M7 5.5v13l11-6.5-11-6.5Z" />
-  </svg>
-);
 
 function greeting() {
   const h = new Date().getHours();
@@ -82,20 +77,7 @@ export function Home() {
             {trending
               .filter((t) => t.playCount > 0)
               .map((track) => (
-                <div key={track.id} className="card" onClick={() => playTrack(track, trending)}>
-                  <div className="card-art-wrap">
-                    {track.album?.coverPath ? (
-                      <img className="card-art" src={mediaUrl(track.album.coverPath)!} alt={track.title} />
-                    ) : (
-                      <div className="card-art" />
-                    )}
-                    <button className="card-play-btn" aria-label={`Play ${track.title}`}>
-                      <PlayIcon />
-                    </button>
-                  </div>
-                  <div className="card-title">{track.title}</div>
-                  <div className="card-sub">{track.artist?.name}</div>
-                </div>
+                <TrackCard key={track.id} track={track} queue={trending} />
               ))}
           </div>
         </>
@@ -108,20 +90,7 @@ export function Home() {
           </div>
           <div className="card-grid">
             {recommended.map((track) => (
-              <div key={track.id} className="card" onClick={() => playTrack(track, recommended)}>
-                <div className="card-art-wrap">
-                  {track.album?.coverPath ? (
-                    <img className="card-art" src={mediaUrl(track.album.coverPath)!} alt={track.title} />
-                  ) : (
-                    <div className="card-art" />
-                  )}
-                  <button className="card-play-btn" aria-label={`Play ${track.title}`}>
-                    <PlayIcon />
-                  </button>
-                </div>
-                <div className="card-title">{track.title}</div>
-                <div className="card-sub">{track.artist?.name}</div>
-              </div>
+              <TrackCard key={track.id} track={track} queue={recommended} />
             ))}
           </div>
         </>
@@ -167,20 +136,7 @@ export function Home() {
           </p>
           <div className="card-grid">
             {signatureMatched.map((track) => (
-              <div key={track.id} className="card" onClick={() => playTrack(track, signatureMatched)}>
-                <div className="card-art-wrap">
-                  {track.album?.coverPath ? (
-                    <img className="card-art" src={mediaUrl(track.album.coverPath)!} alt={track.title} />
-                  ) : (
-                    <div className="card-art" />
-                  )}
-                  <button className="card-play-btn" aria-label={`Play ${track.title}`}>
-                    <PlayIcon />
-                  </button>
-                </div>
-                <div className="card-title">{track.title}</div>
-                <div className="card-sub">{track.artist?.name}</div>
-              </div>
+              <TrackCard key={track.id} track={track} queue={signatureMatched} />
             ))}
           </div>
         </>
@@ -197,20 +153,7 @@ export function Home() {
           </div>
           <div className="card-grid">
             {verifiable.map((track) => (
-              <div key={track.id} className="card" onClick={() => playTrack(track, verifiable)}>
-                <div className="card-art-wrap">
-                  {track.album?.coverPath ? (
-                    <img className="card-art" src={mediaUrl(track.album.coverPath)!} alt={track.title} />
-                  ) : (
-                    <div className="card-art" />
-                  )}
-                  <button className="card-play-btn" aria-label={`Play ${track.title}`}>
-                    <PlayIcon />
-                  </button>
-                </div>
-                <div className="card-title">{track.title}</div>
-                <div className="card-sub">{track.artist?.name}</div>
-              </div>
+              <TrackCard key={track.id} track={track} queue={verifiable} />
             ))}
           </div>
         </>
@@ -221,20 +164,7 @@ export function Home() {
       </div>
       <div className="card-grid">
         {tracks.map((track) => (
-          <div key={track.id} className="card" onClick={() => playTrack(track, tracks)}>
-            <div className="card-art-wrap">
-              {track.album?.coverPath ? (
-                <img className="card-art" src={mediaUrl(track.album.coverPath)!} alt={track.title} />
-              ) : (
-                <div className="card-art" />
-              )}
-              <button className="card-play-btn" aria-label={`Play ${track.title}`}>
-                <PlayIcon />
-              </button>
-            </div>
-            <div className="card-title">{track.title}</div>
-            <div className="card-sub">{track.artist?.name}</div>
-          </div>
+          <TrackCard key={track.id} track={track} queue={tracks} />
         ))}
         {tracks.length === 0 && <div className="card-sub">No tracks yet.</div>}
       </div>

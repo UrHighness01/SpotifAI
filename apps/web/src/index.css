@@ -296,6 +296,50 @@ img.card-art {
   transform: scale(1.06);
 }
 
+/* Like (heart) button — on cards + player */
+.like-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 0.3rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, transform 0.15s ease;
+  line-height: 1;
+}
+.like-btn:hover { color: var(--text); transform: scale(1.1); }
+.like-btn.liked { color: var(--accent); }
+.like-btn-on-card {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.2s ease, transform 0.2s ease, color 0.15s ease, background 0.15s ease;
+  width: 34px;
+  height: 34px;
+}
+.like-btn-on-card.liked { color: var(--accent); opacity: 1; }
+.card:hover .like-btn-on-card {
+  opacity: 1;
+  transform: translateY(0);
+}
+.like-btn-on-card:hover { background: rgba(0, 0, 0, 0.8); color: var(--accent); }
+
+/* Player like button — heart next to the now-playing title */
+.player-meta-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.like-btn-in-player { padding: 0.2rem; }
+.like-btn-in-player.liked { color: var(--accent); }
+
 .card-title {
   font-size: 0.92rem;
   font-weight: 600;
