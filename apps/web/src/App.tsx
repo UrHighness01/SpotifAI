@@ -8,6 +8,7 @@ import { Search } from "./pages/Search";
 import { MadeWith } from "./pages/MadeWith";
 import { VerifiedCollection } from "./pages/VerifiedCollection";
 import { CorpusStatus } from "./pages/CorpusStatus";
+import { ProvenanceExplain } from "./pages/ProvenanceExplain";
 import { Library } from "./pages/Library";
 import { Playlists } from "./pages/Playlists";
 import { PlaylistDetail } from "./pages/PlaylistDetail";
@@ -71,6 +72,7 @@ export function App() {
           <Route path="/library" element={<Library />} />
           <Route path="/verified/:userId" element={<VerifiedCollection />} />
           <Route path="/corpus" element={<CorpusStatus />} />
+          <Route path="/provenance" element={<ProvenanceExplain />} />
           <Route path="/playlists" element={<Playlists />} />
           <Route path="/playlist/:id" element={<PlaylistDetail />} />
           <Route path="/upload" element={<Upload />} />

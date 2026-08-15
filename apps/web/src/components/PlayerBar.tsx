@@ -122,6 +122,15 @@ export function PlayerBar() {
         <div className="meta">
           <div className="title">{track.title}</div>
           <div className="artist">{track.artist?.name}</div>
+          {/* Provenance badge at the point of play (slice 73): the honest
+              label rendered where the listener encounters it — the capstone
+              made felt. signature-confirmed (independently validated),
+              recorded (fingerprinted), or none. */}
+          {track.provenanceStatus && (
+            <span className={`rights-badge provenance ${track.provenanceStatus}`}>
+              {track.provenanceStatus === "signature-matched" ? "✓ signature-confirmed" : track.provenanceStatus.replace(/-/g, " ")}
+            </span>
+          )}
           {/* Prompt-echo (John's next-ideas #1): the platform's pitch is
               honesty — make the actual generation prompt the hero of the
               listening experience, live in the player. */}
