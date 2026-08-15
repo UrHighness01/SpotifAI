@@ -5,6 +5,7 @@ import { Home } from "./pages/Home";
 import { Artist } from "./pages/Artist";
 import { Album } from "./pages/Album";
 import { Search } from "./pages/Search";
+import { Browse } from "./pages/Browse";
 import { MadeWith } from "./pages/MadeWith";
 import { VerifiedCollection } from "./pages/VerifiedCollection";
 import { CorpusStatus } from "./pages/CorpusStatus";
@@ -67,6 +68,7 @@ export function App() {
       <div className="main">
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/browse" element={<Browse />} />
           <Route path="/search" element={<Search />} />
           <Route path="/made-with/:model" element={<MadeWith />} />
           <Route path="/library" element={<Library />} />

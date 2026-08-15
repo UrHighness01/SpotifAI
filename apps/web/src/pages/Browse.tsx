@@ -4,27 +4,24 @@ import { api, mediaUrl } from "../api";
 import { TrackRow } from "../components/TrackRow";
 import type { ApiArtist, ApiTrack } from "../types";
 
-// Browse facet by generator (John's ideas pass #3): "Made with X" — a
-// Spotify-esque browsing dimension that fits the AI-music-only model. The
-// API already supports ?aiModel= on /tracks and (now) /artists.
+// Browse-all page (user's ask): unlike /made-with/:model (which filters to
+// ONE generator and therefore never showed undisclosed tracks), this page
+// browses the WHOLE catalog — including aiModel="unknown"/Not disclosed —
+// with a live search field and the same "Made with" facets for narrowing.
+// Same resilience as Search: failed loads show an error + retry, and it
+// refetches on window focus regain.
 const AI_MODEL_FACETS = ["Suno v4", "Udio", "Suno v3.5"];
-// Tracks uploaded without a disclosed model have aiModel="unknown" — they
-// used to vanish from search entirely once any facet was active (typing in
-// the box kept the facet, and "unknown" wasn't in the facet list). Now the
-// box clears the facet, and this chip keeps undisclosed-model tracks
-// browsable.
 const UNKNOWN_FACET = "unknown";
+// "All" = no filter — the default, so undisclosed tracks show up.
+const ALL_FACET = "all";
 
-export function Search() {
+export function Browse() {
   const [q, setQ] = useState("");
   const [aiModel, setAiModel] = useState<string | null>(null);
   const [artists, setArtists] = useState<ApiArtist[]>([]);
   const [tracks, setTracks] = useState<ApiTrack[]>([]);
   const [searched, setSearched] = useState(false);
-  const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Latest requested query — stale responses (an older keystroke resolving
-  // after a newer one) are discarded.
   const reqSeq = useRef(0);
   const retryTimer = useRef<number | undefined>(undefined);
 
@@ -32,27 +29,24 @@ export function Search() {
     const seq = ++reqSeq.current;
     setQ(value);
     setAiModel(model);
-    setSearching(true);
     setError(null);
+    // No aiModel param = browse ALL (including unknown). A model of
+    // UNKNOWN_FACET ("unknown") filters to Not-disclosed tracks only.
+    const modelParam = model === ALL_FACET || model === null ? undefined : model;
     try {
       const [a, t] = await Promise.all([
-        api.artists(value.trim() || undefined, model || undefined),
-        api.tracks({ q: value.trim() || undefined, aiModel: model || undefined }),
+        api.artists(value.trim() || undefined, modelParam),
+        api.tracks({ q: value.trim() || undefined, aiModel: modelParam }),
       ]);
       if (seq !== reqSeq.current) return; // stale response
       setArtists(a.artists);
       setTracks(t.tracks);
       setSearched(true);
-      setSearching(false);
     } catch (err) {
       if (seq !== reqSeq.current) return;
-      setSearching(false);
-      // A failed search used to leave the page stuck on "No tracks found"
-      // forever (user-reported: results only appeared after clicking a
-      // facet, which re-fired the request). Show the failure and retry.
       const status = (err as { status?: number })?.status;
-      const msg = err instanceof Error ? err.message : "search failed";
-      setError(status === 429 ? "Too many requests — try again in a moment" : `Search failed (${msg}) — retrying…`);
+      const msg = err instanceof Error ? err.message : "browse failed";
+      setError(status === 429 ? "Too many requests — try again in a moment" : `Browse failed (${msg}) — retrying…`);
       if (status === undefined || status >= 500) {
         if (retryTimer.current) clearTimeout(retryTimer.current);
         retryTimer.current = window.setTimeout(() => run(value, model), 2000);
@@ -60,8 +54,12 @@ export function Search() {
     }
   };
 
-  // Retry/refresh when the window regains focus — the API may have come up
-  // or restarted since the last attempt.
+  useEffect(() => {
+    run("", null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Retry/refresh on window focus regain.
   useEffect(() => {
     const onRefocus = () => {
       if (document.visibilityState === "visible" && searched) run(q, aiModel);
@@ -77,22 +75,26 @@ export function Search() {
   }, [searched, q, aiModel]);
 
   const facet = (model: string) => {
-    const next = aiModel === model ? null : model;
+    const next = aiModel === model ? ALL_FACET : model;
     run(q, next);
   };
 
   const typeQuery = (value: string) => {
-    // Typing a fresh query searches EVERYTHING — clear any active facet so
-    // tracks with an undisclosed/unknown model don't silently vanish (the
-    // Error 500 report: q=Error 500 + aiModel=Suno v4 returned 0).
+    // Typing searches across everything — clear any facet so Not-disclosed
+    // tracks are never hidden.
     run(value, null);
   };
 
   return (
     <div>
+      <h1 className="page-greeting">Browse all</h1>
+      <p style={{ color: "var(--text-dim)", marginBottom: "1rem" }}>
+        Every track on SpotifAI — including ones without a disclosed model.
+      </p>
+
       <input
         className="search-input"
-        placeholder="What do you want to listen to?"
+        placeholder="Search the catalog…"
         value={q}
         onChange={(e) => typeQuery(e.target.value)}
         autoFocus
@@ -100,6 +102,12 @@ export function Search() {
 
       <div className="facet-row" style={{ marginTop: "0.75rem" }}>
         <span className="facet-label">Made with</span>
+        <button
+          className={`facet-chip${aiModel === null || aiModel === ALL_FACET ? " active" : ""}`}
+          onClick={() => facet(ALL_FACET)}
+        >
+          All
+        </button>
         {AI_MODEL_FACETS.map((model) => (
           <button
             key={model}
@@ -115,11 +123,6 @@ export function Search() {
         >
           Not disclosed
         </button>
-        <span className="facet-label" style={{ marginLeft: "0.5rem" }}>
-          <Link to="/browse" style={{ color: "var(--text-dim)", fontSize: "0.75rem" }}>
-            Browse all →
-          </Link>
-        </span>
       </div>
 
       {error && <div className="auth-error" style={{ marginTop: "0.75rem" }}>{error}</div>}
@@ -127,7 +130,7 @@ export function Search() {
       {searched && (
         <>
           <h1 className="section-title" style={{ marginTop: "1.5rem" }}>
-            Artists {aiModel ? `· ${aiModel}` : ""}
+            Artists {aiModel && aiModel !== ALL_FACET ? `· ${aiModel === UNKNOWN_FACET ? "Not disclosed" : aiModel}` : ""}
           </h1>
           <div className="card-grid">
             {artists.map((artist) => (
@@ -138,14 +141,14 @@ export function Search() {
                   <div className="card-art artist-art">🤖</div>
                 )}
                 <div className="card-title">{artist.name}</div>
-                <div className="card-sub">{artist.aiModel}</div>
+                <div className="card-sub">{artist.aiModel === "unknown" ? "Not disclosed" : artist.aiModel}</div>
               </Link>
             ))}
             {artists.length === 0 && <div className="card-sub">No artists found.</div>}
           </div>
 
           <h1 className="section-title" style={{ marginTop: "1.5rem" }}>
-            Tracks {aiModel ? `· ${aiModel}` : ""}
+            Tracks {aiModel && aiModel !== ALL_FACET ? `· ${aiModel === UNKNOWN_FACET ? "Not disclosed" : aiModel}` : ""}
           </h1>
           <div>
             {tracks.map((track, i) => (

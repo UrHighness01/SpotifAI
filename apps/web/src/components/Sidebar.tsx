@@ -16,6 +16,12 @@ const SearchIcon = () => (
   </svg>
 );
 
+const BrowseIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+    <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 1.5a8.5 8.5 0 1 1 0 17 8.5 8.5 0 0 1 0-17Zm3.2 4.3-5.5 2.6-2.6 5.5 5.5-2.6 2.6-5.5Zm-2.8 4.4a1.2 1.2 0 1 1-1.7-1.7 1.2 1.2 0 0 1 1.7 1.7Z" />
+  </svg>
+);
+
 const HeartIcon = () => (
   <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
     <path d="M12 20.6c-.24 0-.47-.08-.66-.24C6.44 16.5 3 13.15 3 9.6 3 6.8 5.2 4.6 8 4.6c1.55 0 3.02.75 4 1.93A5.32 5.32 0 0 1 16 4.6c2.8 0 5 2.2 5 5 0 3.55-3.44 6.9-8.34 10.76-.19.16-.42.24-.66.24Z" />
@@ -52,6 +58,9 @@ export function Sidebar() {
         </NavLink>
         <NavLink to="/search" className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}>
           <SearchIcon /> Search
+        </NavLink>
+        <NavLink to="/browse" className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}>
+          <BrowseIcon /> Browse
         </NavLink>
       </nav>
 
